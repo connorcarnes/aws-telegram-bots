@@ -1,0 +1,52 @@
+# Master Control Plane cloudformation Template - Used to deploy the service to child AWS Accounts.
+# This control plane does the actual DEPLOYING, but it does so by referencing the child templates via AWS::cloudformation::Stack
+# Hi - you want a new parameter - great!
+# 1 - Update the parameter JSONS (ControlPlane-Parameters\*.json)
+# 2 - Update two locations in ControlPlane
+# 3 - Update two locations in ChildTemplates
+
+---
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: "githubcfndeploy: Control Plane"
+
+Parameters:
+
+  ServiceName:
+    Type: String
+    Description: The name of the service being deployed.
+
+  StackTag:
+    Type: String
+    Description: An environment tag for this stack. Used to differentiate what resource need or should be created.
+
+  ArtifactS3Bucket:
+    Type: String
+    Description: S3 Bucket for CodePipeline Artifacts
+
+  ArtifactS3KeyPrefix:
+    Type: String
+    Description: S3 Key Prefix for CodePipeline Artifacts
+
+Resources:
+  # Logical ID should be the same as the (child) nested template name - not required, but makes it easy to line things up and read
+  pythonLambdaExample:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./childtemplates/pythonLambdaExample.yml
+      # TemplateURL: !Sub
+      #   # - "https://${ArtifactS3Bucket}.s3.${AWSRegion}.amazonaws.com/${ArtifactS3KeyPrefix}/${FileName}"
+      #   - "https://s3-${AWSRegion}.amazonaws.com/${ArtifactS3Bucket}/${ArtifactS3KeyPrefix}/${FileName}"
+      #   - AWSRegion: !Ref "AWS::Region"
+      #     ArtifactS3Bucket: !Ref ArtifactS3Bucket
+      #     ArtifactS3KeyPrefix: !Ref ArtifactS3KeyPrefix
+      #     FileName: cloudformation/cloudformation/childtemplates/pwshLambdaExample.yml
+      TimeoutInMinutes: 15 #make sure it can actually complete in this time period
+      Parameters: #much match the parameters of nested template
+        ServiceName: !Ref ServiceName
+        StackTag: !Ref StackTag
+      Tags:
+        - Key: ServiceName
+          Value: !Ref ServiceName
+        - Key: StackTag
+          Value: !Ref StackTag

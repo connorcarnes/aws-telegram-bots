@@ -1,0 +1,676 @@
+# This CloudFormation Template must be deployed to the AWS Account where
+# AWS CodePipeline will be running. It creates an AWS codepipeline that
+# pulls source changes from a specificed GitHub repository.
+# This template uses GitHub version 2 Github app-based auth backed by
+# a CodeStarSourceConnection for Bitbucket, GitHub, and GitHub Enterprise Server actions resource.
+# You must have ALREADY created a GitHub account and created a connection to that account.
+# This connection enables AWS CodePipeline access to your GitHub repository.
+# This allows AWS CodePipeline to source commits from GitHub to your pipeline.
+
+# The Stack Name can not be the same as the ServiceName
+# Suggested Stack Name: YourProjectNamePipeLine
+
+# READ THE DOCS!
+  #CodeStarSourceConnection
+    # Setting up a GitHub Connection
+      # https://docs.aws.amazon.com/codepipeline/latest/userguide/connections-github.html
+    # Cloudformation CodestarConnectionSource
+      # https://docs.aws.amazon.com/codepipeline/latest/userguide/action-reference-CodestarConnectionSource.html
+    # CodestarConnectionSource IAM Permissions:
+      # https://docs.aws.amazon.com/dtconsole/latest/userguide/security-iam.html#permissions-reference-connections
+    # Update GitHub Actions v1 to v2
+      # https://docs.aws.amazon.com/codepipeline/latest/userguide/update-github-action-connections.html
+  # CodePipeline
+    # CodePipeline pipeline structure reference
+      # https://docs.aws.amazon.com/codepipeline/latest/userguide/reference-pipeline-structure.html
+    # Docker images provided by CodeBuild
+      # https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-available.html
+
+---
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: 'MANUAL DEPLOYMENT: Deploys CodePipeline that uses CodestarConnectionSource arn to source specified GitHub repo.'
+
+Parameters:
+
+  ServiceName:
+    Type: String
+    Description: The name/purpose of the deployment - lowercase only
+    AllowedPattern: ^[a-z]*$
+
+  CodeStarSourceConnection:
+    Type: String
+    Description: arn of your codestar-connections for GitHub version 2 authentication
+    AllowedPattern: ^arn:aws:codestar-connections.*:connection\/.*$
+
+  GitHubRepositoryName:
+    Type: String
+    Description: The name of the GitHub repository that code-pipeline will source from
+
+  GitHubOwner:
+    Type: String
+    Description: The name of the GitHub user or organization who owns the GitHub repository.
+
+  GitHubBranchName:
+    Type: String
+    Default: main
+    Description: The name of the branch where source changes are to be detected.
+
+  CodeBuildImage:
+    Type: String
+    Description: AWS CodeBuild Image Identifier
+    Default: aws/codebuild/standard:5.0
+    AllowedPattern: ^aws\/codebuild\/standard:\d.\d$
+
+  PathToBuildSpecTemplate:
+    Type: String
+    Description: 'The GitHub Repository path to the buildspec.yml'
+    Default: "CodeBuild/UnitTestAndBuild/buildspec.yml"
+
+  PathToControlPlaneTemplate:
+    Type: String
+    Description: 'The GitHub Repository path to the Control Plane CloudFormation Template'
+    Default: cloudformation/controlplane-packaged.yml
+
+  PathToControlPlaneParametersJson:
+    Type: String
+    Description: 'The GitHub Repository path to the Control Plane Parameters JSON file'
+    Default: cloudformation/control_plane_parameters/parameters.json
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Project Information
+        Parameters:
+          - ServiceName
+      - Label:
+          default: GitHub Information
+        Parameters:
+          - CodeStarSourceConnection
+          - GitHubRepositoryName
+          - GitHubOwner
+          - GitHubBranchName
+      - Label:
+          default: Pipeline Configuration
+        Parameters:
+          - CodeBuildImage
+          - PathToBuildSpecTemplate
+          - PathToControlPlaneTemplate
+          - PathToControlPlaneParametersJson
+    ParameterLabels:
+      ServiceName:
+        default: Project Name
+      CodeStarSourceConnection:
+        default: Code Star Connection Arn
+      GitHubRepositoryName:
+        default: GitHub Repository Name
+      GitHubOwner:
+        default: GitHub User Name
+      GitHubBranchName:
+        default: GitHub Branch Name
+      CodeBuildImage:
+        default: CodeBuild Image Identifier
+
+Resources:
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kms-key.html
+  KMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: "Used to encrypt/decrypt all S3 build artifacts used in Code Pipeline deployment."
+      # Enabled:
+      EnableKeyRotation: true
+      # KeyUsage:
+      # PendingWindowInDays:
+      Tags:
+        - Key: ServiceName
+          Value: !Ref ServiceName
+        - Key: StackName
+          Value: !Ref AWS::StackName
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: !Ref AWS::StackName
+        Statement:
+          -
+            Sid: Allows administration of the KMS Key
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action:
+              - "kms:CancelKeyDeletion"
+              - "kms:Create*"
+              - "kms:Delete*"
+              - "kms:Decrypt"
+              - "kms:Describe*"
+              - "kms:Disable*"
+              - "kms:Enable*"
+              - "kms:Encrypt"
+              - "kms:GenerateDataKey*"
+              - "kms:Get*"
+              - "kms:List*"
+              - "kms:Put*"
+              - "kms:ReEncrypt*"
+              - "kms:Revoke*"
+              - "kms:ScheduleKeyDeletion"
+              - "kms:Update*"
+            Resource: "*"
+          -
+            Effect: Allow
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action:
+              - "kms:Encrypt"
+              - "kms:Decrypt"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:DescribeKey"
+            Resource: "*"
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kms-alias.html
+  KMSAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub "alias/${AWS::StackName}"
+      TargetKeyId: !Ref KMSKey
+
+    # AWS CodePipeline Infrastructure
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket.html
+  GitHubCPSyncArtifactS3Bucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    Properties:
+      # AccelerateConfiguration: AccelerateConfiguration
+      AccessControl: BucketOwnerFullControl
+      # AnalyticsConfigurations:
+      #   - AnalyticsConfiguration
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      BucketName: !Sub ${ServiceName}-${AWS::AccountId}-artifacts
+      # CorsConfiguration:
+      #   CorsConfiguration
+      # InventoryConfigurations:
+      #   - InventoryConfiguration
+      # LifecycleConfiguration:
+      #   Rules:
+      #       -
+      #         AbortIncompleteMultipartUpload:
+      #           DaysAfterInitiation: 7
+      #         Status: Enabled
+      #         Transitions:
+      #           -
+      #             StorageClass: GLACIER
+      #             TransitionInDays: 30
+      # LoggingConfiguration:
+      #   DestinationBucketName: !Ref S3BucketLogs
+      #   LogFilePrefix: '/logs/updateapcdata/'
+      # MetricsConfigurations:
+      #   - MetricsConfiguration
+      # NotificationConfiguration:
+      #   TopicConfigurations:
+      #     -
+      #       Event: s3:ObjectCreated:*
+      #       Topic: !Ref UpdateSNSTopic
+      # ObjectLockConfiguration:
+      #   ObjectLockConfiguration
+      # ObjectLockEnabled: Boolean
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      # ReplicationConfiguration:
+      #   ReplicationConfiguration
+      # VersioningConfiguration:
+      #   VersioningConfiguration
+      # WebsiteConfiguration:
+      #   WebsiteConfiguration
+      Tags:
+        - Key: ServiceName
+          Value: !Ref ServiceName
+        - Key: StackName
+          Value: !Ref AWS::StackName
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-policy.html
+  GitHubCPSyncArtifactS3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref GitHubCPSyncArtifactS3Bucket
+      PolicyDocument:
+        Statement:
+          -
+            Action:
+              - "s3:*"
+            Effect: Allow
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Resource:
+              - !Sub "arn:aws:s3:::${GitHubCPSyncArtifactS3Bucket}"
+              - !Sub "arn:aws:s3:::${GitHubCPSyncArtifactS3Bucket}/*"
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${AWS::AccountId}:root" # Allow assuming this role for local developer testing
+              Service:
+                - "codebuild.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: /
+      Policies:
+        -
+          PolicyName: !Sub "${ServiceName}-CodeBuildNestedCFNAccessPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "cloudformation:ValidateTemplate"
+                Resource: "*"
+              -
+                Effect: "Allow"
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource:
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*
+              -
+                Effect: "Allow"
+                Action:
+                  - "s3:PutObject"
+                  - "s3:GetObject"
+                  - "s3:GetObjectVersion"
+                  - "s3:ListBucket"
+                Resource:
+                  - !Sub "arn:aws:s3:::codepipeline-${AWS::Region}-*"
+                  - !Sub "arn:aws:s3:::${GitHubCPSyncArtifactS3Bucket}"
+                  - !Sub "arn:aws:s3:::${GitHubCPSyncArtifactS3Bucket}/*"
+              -
+                Effect: "Allow"
+                Action:
+                  - "s3:GetObject"
+                  - "s3:GetObjectVersion"
+                  - "s3:ListBucket"
+                Resource:
+                  - '*'
+              -
+                Effect: Allow
+                Action:
+                  - "kms:*"
+                Resource: !GetAtt KMSKey.Arn
+        # -
+        #   PolicyName: !Sub "${ServiceName}-IntegrationTestPolicy"
+        #   PolicyDocument:
+        #     Version: "2012-10-17"
+        #     Statement:
+        #       -
+        #         Effect: Allow
+        #         Action:
+        #           - "sqs:*"
+        #         Resource: "*"
+        #       -
+        #         Effect: Allow
+        #         Action:
+        #           - "sts:AssumeRole"
+        #         Resource: "*"
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-codebuild-project.html
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-codebuild-project-environment.html
+  # https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-compute-types.html
+  # https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-available.html
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-codebuild-project-source.html
+  UnitTestAndBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: S3
+        Location: !Ref GitHubCPSyncArtifactS3Bucket
+        Name: !Sub "${ServiceName}-UnitTestAndBuild"
+      # BadgeEnabled:
+      # Cache:
+      Description: Unit Testing and Building
+      EncryptionKey: !GetAtt KMSKey.Arn
+      Environment:
+        # Certificate:
+        ComputeType: BUILD_GENERAL1_SMALL  #3GB Memory | 2 vCPU | 64GB HD
+        Type: LINUX_CONTAINER
+        Image: !Ref CodeBuildImage
+        EnvironmentVariables:
+          - Name: ARTIFACT_S3_BUCKET
+            Value: !Ref GitHubCPSyncArtifactS3Bucket
+          - Name: S3_KEY_PREFIX
+            Value: 'SingleAccount'
+          - Name: GIT_REPO
+            Value: !Ref GitHubRepositoryName
+      # LogsConfig:
+      Name: !Sub "${ServiceName}-UnitTestAndBuild"
+      # QueuedTimeoutInMinutes:
+      # SecondaryArtifacts:
+      # SecondarySources:
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Source:
+        # Auth:
+        BuildSpec: !Ref PathToBuildSpecTemplate
+        # GitCloneDepth:
+        # GitSubmodulesConfig:
+        # InsecureSsl:
+        Location: !Sub "https://github.com/${GitHubOwner}/${GitHubRepositoryName}.git"
+        ReportBuildStatus: true
+        # SourceIdentifier:
+        Type: GITHUB
+      # SourceVersion:
+      TimeoutInMinutes: 30
+      # Triggers:
+      # VpcConfig:
+      Tags:
+        - Key: Name
+          Value: !Sub "${ServiceName}-UnitTestAndBuild"
+        - Key: ServiceName
+          Value: !Ref ServiceName
+        - Key: StackName
+          Value: !Ref AWS::StackName
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-codebuild-project.html
+  # IntegrationTestProject:
+  #   Type: AWS::CodeBuild::Project
+  #   Properties:
+  #     Artifacts:
+  #       Type: NO_ARTIFACTS
+  #     # BadgeEnabled:
+  #     # Cache:
+  #     Description: Integration Testing
+  #     EncryptionKey: !GetAtt KMSKey.Arn
+  #     Environment:
+  #       # Certificate:
+  #       ComputeType: BUILD_GENERAL1_SMALL  #3GB Memory | 2 vCPU | 64GB HD
+  #       Type: LINUX_CONTAINER
+  #       Image: 'aws/codebuild/standard:3.0'
+  #       EnvironmentVariables:
+  #         - Name: ARTIFACT_S3_BUCKET
+  #           Value: !Ref GitHubCPSyncArtifactS3Bucket
+  #         - Name: S3_KEY_PREFIX
+  #           Value: 'SingleAccount'
+  #         - Name: GIT_REPO
+  #           Value: !Ref GitHubRepositoryName
+  #         - Name: IntegrationTestIAMRole
+  #           Value: !GetAtt IntegrationTestIAMRole.Arn
+  #         - Name: AWSRegion
+  #           Value: !Sub ${AWS::Region}
+  #     # LogsConfig:
+  #     Name: !Sub "${ServiceName}-IntegrationTest"
+  #     # QueuedTimeoutInMinutes:
+  #     # SecondaryArtifacts:
+  #     # SecondarySources:
+  #     ServiceRole: !GetAtt CodeBuildRole.Arn
+  #     Source:
+  #       # Auth:
+  #       BuildSpec: CodeBuild/IntegrationTest/buildspec.yml
+  #       # GitCloneDepth:
+  #       # GitSubmodulesConfig:
+  #       # InsecureSsl:
+  #       # https://github.com/techthoughts2/praetor_bot.git
+  #       Location: !Sub https://github.com/${GitHubOwner}/${GitHubRepositoryName}.git
+  #       ReportBuildStatus: true
+  #       # SourceIdentifier:
+  #       Type: GITHUB
+  #     # SourceVersion:
+  #     TimeoutInMinutes: 45
+  #     # Triggers:
+  #     # VpcConfig:
+  #     Tags:
+  #       - Key: Name
+  #         Value: !Sub "${ServiceName}-IntegrationTest"
+  #       - Key: ServiceName
+  #         Value: !Ref ServiceName
+  #       - Key: StackName
+  #         Value: !Ref AWS::StackName
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html
+  GitHubCPSyncCodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ServiceName}-CodePipelineRole"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        -
+          PolicyName: !Sub "${ServiceName}-CodePipelineNestedCFNAccessPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # -
+              #   Effect: Allow
+              #   Action:
+              #     - sns:Publish
+              #   Resource:
+              #     - !Ref GitHubCPSyncPipelineStatusUpdates
+              -
+                Effect: Allow
+                Action:
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:CreateStack
+                  - cloudformation:CreateUploadBucket
+                  - cloudformation:DeleteStack
+                  - cloudformation:Describe*
+                  - cloudformation:List*
+                  - cloudformation:UpdateStack
+                  - cloudformation:ValidateTemplate
+                  - cloudformation:ExecuteChangeSet
+                Resource:
+                  - "*"
+              -
+                Effect: Allow
+                Action:
+                  - s3:*
+                Resource:
+                  - !Sub "arn:aws:s3:::${GitHubCPSyncArtifactS3Bucket}"
+                  - !Sub "arn:aws:s3:::${GitHubCPSyncArtifactS3Bucket}/*"
+              -
+                Effect: Allow
+                Action:
+                  - iam:ListRoles
+                  - iam:PassRole
+                  - sts:AssumeRole
+                Resource:
+                  - "*"
+              -
+                Effect: Allow
+                Action:
+                  - codebuild:StartBuild
+                  - codebuild:BatchGetBuilds
+                Resource:
+                  - !Sub arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${UnitTestAndBuildProject}
+                  - !Sub arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:build/${UnitTestAndBuildProject}:*
+                  # - !Sub arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${IntegrationTestProject}
+                  # - !Sub arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:build/${IntegrationTestProject}:*
+              -
+                Effect: Allow
+                Action:
+                  - kms:*
+                Resource: !GetAtt KMSKey.Arn
+              -
+                Effect: Allow
+                Action:
+                  - codestar-connections:GetConnection
+                  - codestar-connections:ListConnections
+                  - codestar-connections:GetInstallationUrl
+                  - codestar-connections:GetIndividualAccessToken
+                  - codestar-connections:ListInstallationTargets
+                  - codestar-connections:StartOAuthHandshake
+                  - codestar-connections:UseConnection
+                Resource: !Ref CodeStarSourceConnection
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html
+  GitHubCPSyncCloudFormationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ServiceName}-CloudFormationRole"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                cloudformation.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        -
+          PolicyName: !Sub "${ServiceName}-CloudFormationDeploymentPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "*"
+                Resource: "*"
+
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-codepipeline-pipeline.html
+  GitHubCPSyncPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      ArtifactStore:
+        Type: S3
+        Location: !Ref GitHubCPSyncArtifactS3Bucket
+      # ArtifactStores:
+      # DisableInboundStageTransitions:
+      Name: !Sub "${GitHubRepositoryName}-GitHubCPSync"
+      # RestartExecutionOnUpdate:
+      RoleArn: !GetAtt GitHubCPSyncCodePipelineRole.Arn
+      Tags:
+        - Key: ServiceName
+          Value: !Ref ServiceName
+        - Key: StackName
+          Value: !Ref AWS::StackName
+      # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-codepipeline-pipeline-stages.html
+      # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-codepipeline-pipeline-stages-actions.html
+      # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-codepipeline-pipeline-stages-actions-actiontypeid.html
+      # https://docs.aws.amazon.com/codepipeline/latest/userguide/reference-pipeline-structure.html#actions-valid-providers
+      # https://docs.aws.amazon.com/codepipeline/latest/userguide/action-reference-GitHub.html
+      # https://docs.aws.amazon.com/codepipeline/latest/userguide/update-change-detection.html#update-change-detection-cfn-github
+      Stages:
+        -
+          Name: Source
+          Actions:
+            - Name: Source
+              ActionTypeId:
+                Version: '1'
+                Owner: AWS
+                Category: Source
+                Provider: CodeStarSourceConnection
+              OutputArtifacts:
+                - Name: GitHubSourceCode
+              RunOrder: 1
+              Configuration:
+                ConnectionArn: !Ref CodeStarSourceConnection
+                FullRepositoryId: !Sub "${GitHubOwner}/${GitHubRepositoryName}"
+                BranchName: !Ref GitHubBranchName
+                # OutputArtifactFormat: "CODE_ZIP"
+        -
+          Name: Build
+          Actions:
+            -
+              Name: CodeBuild
+              InputArtifacts:
+                - Name: GitHubSourceCode
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: "1"
+                Provider: CodeBuild
+              OutputArtifacts:
+                - Name: CFNTemplateArtifact
+              Configuration:
+                ProjectName:
+                  Ref: UnitTestAndBuildProject
+              RunOrder: 1
+        -
+          Name: Deploy
+          Actions:
+            -
+              Name: DeployPrimaryControlPlane
+              InputArtifacts:
+                - Name: CFNTemplateArtifact
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: "1"
+                Provider: CloudFormation
+              OutputArtifacts:
+                - Name: CreatedPrimaryControlPlaneStack
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                RoleArn: !GetAtt GitHubCPSyncCloudFormationRole.Arn
+                Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
+                StackName: !Ref ServiceName
+                TemplateConfiguration: !Sub "CFNTemplateArtifact::${PathToControlPlaneParametersJson}"
+                TemplatePath: !Sub "CFNTemplateArtifact::${PathToControlPlaneTemplate}"
+              RunOrder: 1
+              RoleArn: !GetAtt GitHubCPSyncCodePipelineRole.Arn
+            # -
+            #   Name: ValidateStack
+            #   InputArtifacts:
+            #     - Name: GitHubSourceCode
+            #   ActionTypeId:
+            #     Category: Test
+            #     Owner: AWS
+            #     Version: "1"
+            #     Provider: CodeBuild
+            #   OutputArtifacts:
+            #     - Name: ValidatedStack
+            #   Configuration:
+            #     ProjectName: !Ref IntegrationTestProject
+            #   RunOrder: 2
+
+Outputs:
+
+  KMSKeyArn:
+    Value: !GetAtt KMSKey.Arn
+    Export:
+      Name: GitHubSyncKMSKeyArn
+
+  GitHubCPSyncArtifactS3BucketName:
+    Value: !Ref GitHubCPSyncArtifactS3Bucket
+    Description: Name of the GitHubCPSyncArtifactS3Bucket Amazon S3 bucket
+    Export:
+      Name: GitHubSyncArtifactS3Bucket
+
+  GitHubCPSyncPipeline:
+    Value: !Ref GitHubCPSyncPipeline
+    Description: Pipeline Name
+    Export:
+      Name: GitHubSyncPipeline
+
+  UnitTestAndBuildProject:
+    Value: !Ref UnitTestAndBuildProject
+    Description: CodeBuild Unit Test And Build Project
+    Export:
+      Name: GitHubSyncUnitTestAndBuildProject

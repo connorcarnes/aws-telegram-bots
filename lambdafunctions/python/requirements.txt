@@ -1,0 +1,8 @@
+boto3
+moto
+pytest
+pytest-cov
+pytest-xdist
+aws_xray_sdk
+jsonschema
+requests
