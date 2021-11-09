@@ -160,12 +160,6 @@ Resources:
             FunctionName: !GetAtt LambdaFunction.Arn
             Principal: "apigateway.amazonaws.com"
             SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*/"
-    LambdaFunctionLogGroup:
-      Type: AWS::Logs::LogGroup
-      DependsOn: LambdaFunction
-      Properties:
-        LogGroupName: !Sub '/aws/lambda/${LambdaFunction}'
-        RetentionInDays: 7
 
 Outputs:
   ApiGatewayEndpoint:
