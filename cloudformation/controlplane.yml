@@ -45,8 +45,6 @@ Resources:
       Parameters: #much match the parameters of nested template
         ServiceName: !Ref ServiceName
         StackTag: !Ref StackTag
-        LMFunctionS3KeyPyTgBudgetBot: !Ref LMFunctionS3KeyPyTgBudgetBot
-        LambdaS3BucketName: !Ref ArtifactS3Bucket
       Tags:
         - Key: ServiceName
           Value: !Ref ServiceName
