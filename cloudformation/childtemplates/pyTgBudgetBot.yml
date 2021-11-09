@@ -95,7 +95,7 @@ Resources:
         Type: 'AWS::Serverless::Function'
         Properties:
           CodeUri:
-            Bucket: pytgbudgetbot-514215195183-artifacts
+            Bucket: https://pytgbudgetbot-514215195183-artifacts.s3.us-east-2.amazonaws.com/
             Key: pkg.zip
           # CodeUri:
           #   Bucket: 'tg-budget-bot-bucket'
