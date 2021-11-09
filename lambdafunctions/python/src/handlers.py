@@ -11,6 +11,7 @@ TOKEN = os.environ["TG_TOKEN"]
 URL = "https://api.telegram.org/bot{}/".format(TOKEN)
 CALLBACK_TABLE = os.environ["CALLBACK_TABLE"]
 DATA_TABLE = os.environ["DATA_TABLE"]
+BOT_NAME = os.environ["BOT_NAME"]
 headers = {}
 headers["Content-type"] = "application/json"
 headers["charset"] = "UTF-8"
@@ -204,7 +205,7 @@ def budget_bot_handler(event, context):
                 message_text = message["message"]["text"]
                 if (
                     entity_type == "bot_command"
-                    and message_text == "/add_expense@BodaciousBudgetBot"
+                    and message_text == "/add_expense@" + BOT_NAME
                     or message_text == "/add_expense"
                 ):
                     send_numpad()

@@ -103,6 +103,7 @@ Resources:
                   TG_URL: 'api.telegram.org'
                   CALLBACK_TABLE: 'CallbackTable'
                   DATA_TABLE: 'DataTable'
+                  BOT_NAME: 'DecentDillyallBot'
           Tags:
             ServiceName: !Ref ServiceName
             StackName: !Ref AWS::StackName
