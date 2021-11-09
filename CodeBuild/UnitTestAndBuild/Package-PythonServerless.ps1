@@ -37,7 +37,9 @@ Write-Host "lambdaPackagePath is $lambdaPackagePath"
 # Copy-Item -Path $lambdaSourcePath -Destination $lambdaSourceDestinationPath -Force
 Copy-Item -Path $lambdaSourcePath -Destination $lambdaPackagePath -Force
 
-pip install -t $lambdaPackagePath -r "$lambdaSourcePath\requirements.txt"
+$lambdaRequirementsPath = [System.IO.Path]::Combine($lambdaSourcePath, 'requirements.txt')
+Write-Host "lambdaRequirementsPathis $lambdaRequirementsPath"
+pip install -t $lambdaPackagePath -r $lambdaRequirementsPath
 
 $lambdaZipPath = [System.IO.Path]::Combine($pythonLambdaRoot, 'pkg.zip')
 Write-Host "lambdaZipPath is $lambdaZipPath"
