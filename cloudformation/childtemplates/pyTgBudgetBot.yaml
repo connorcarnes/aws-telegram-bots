@@ -1,0 +1,166 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AUTOMATED: pyTgBudgetBot Serverless Deployment Logic'
+Transform: 'AWS::Serverless-2016-10-31'
+Parameters:
+  ServiceName:
+    Type: String
+    Description: 'Name of the service that will be used to tag each resource.'
+  StackTag:
+    Type: String
+    Description: An environment tag for this stack. Used to differentiate what resource need or should be created.
+Resources:
+    DynamoDBTable:
+        Type: "AWS::DynamoDB::Table"
+        Properties:
+            AttributeDefinitions:
+              - AttributeName: "update_id"
+                AttributeType: "N"
+            TableName: "DataTable"
+            KeySchema:
+              - AttributeName: "update_id"
+                KeyType: "HASH"
+            ProvisionedThroughput:
+                ReadCapacityUnits: 5
+                WriteCapacityUnits: 5
+    DynamoDBTable2:
+        Type: "AWS::DynamoDB::Table"
+        Properties:
+            AttributeDefinitions:
+              - AttributeName: "update_id"
+                AttributeType: "N"
+            TableName: "CallbackTable"
+            KeySchema:
+              - AttributeName: "update_id"
+                KeyType: "HASH"
+            ProvisionedThroughput:
+                ReadCapacityUnits: 5
+                WriteCapacityUnits: 5
+    IAMManagedPolicy:
+        Type: "AWS::IAM::ManagedPolicy"
+        Properties:
+            ManagedPolicyName: "LambdaEdgeExecutionRole"
+            Path: "/service-role/"
+            PolicyDocument: !Sub |
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "dynamodb:BatchGetItem",
+                                "dynamodb:GetItem",
+                                "dynamodb:Query",
+                                "dynamodb:Scan",
+                                "dynamodb:BatchWriteItem",
+                                "dynamodb:PutItem",
+                                "dynamodb:UpdateItem"
+                            ],
+                            "Resource": [
+                                "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBTable2}",
+                                "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBTable}"
+                            ]
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "logs:CreateLogGroup",
+                                "logs:CreateLogStream",
+                                "logs:PutLogEvents"
+                            ],
+                            "Resource": [
+                                "arn:aws:logs:*:*:*"
+                            ]
+                        }
+                    ]
+                }
+    LambdaIamRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            Path: "/service-role/"
+            RoleName: "LambdaIamRole"
+            AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":[\"lambda.amazonaws.com\",\"edgelambda.amazonaws.com\"]},\"Action\":\"sts:AssumeRole\"}]}"
+            MaxSessionDuration: 3600
+            ManagedPolicyArns:
+              - !Ref IAMManagedPolicy
+    LambdaFunction:
+        Type: AWS::Lambda::Function
+        Properties:
+          CodeUri: src
+          Description: ""
+          FunctionName: "LambdaFunction"
+          #Handler: "lambda_function.lambda_handler"
+          Handler: handlers.budget_bot_handler
+          MemorySize: 128
+          Role: !GetAtt LambdaIamRole.Arn
+          Runtime: "python3.9"
+          Timeout: 3
+          Environment:
+              Variables:
+                  TG_TOKEN: ''
+                  TG_CHAT: ''
+                  TG_URL: 'api.telegram.org'
+          # Code:
+          #     S3Bucket: 'tg-budget-bot-bucket'
+          #     S3Key: 'lambda_pkg.zip'
+          Tags:
+            ServiceName: !Ref ServiceName
+            StackName: !Ref AWS::StackName
+    ApiGatewayRestApi:
+          Type: "AWS::ApiGateway::RestApi"
+          Properties:
+              Name: !Sub "ApiGatewayRestApi"
+              ApiKeySourceType: "HEADER"
+              Description: An API Gateway with a Lambda Integration
+              EndpointConfiguration:
+                  Types:
+                    - "REGIONAL"
+    ApiGatewayMethod:
+        Type: "AWS::ApiGateway::Method"
+        Properties:
+            RestApiId: !Ref ApiGatewayRestApi
+            ResourceId: !GetAtt ApiGatewayRestApi.RootResourceId
+            HttpMethod: "ANY"
+            AuthorizationType: "NONE"
+            ApiKeyRequired: false
+            RequestParameters: {}
+            MethodResponses:
+              -
+                ResponseModels:
+                    "application/json": "Empty"
+                StatusCode: "200"
+            Integration:
+                ContentHandling: "CONVERT_TO_TEXT"
+                IntegrationHttpMethod: "POST"
+                IntegrationResponses:
+                  -
+                    ResponseTemplates: {}
+                    StatusCode: "200"
+                PassthroughBehavior: "WHEN_NO_MATCH"
+                TimeoutInMillis: 29000
+                Type: "AWS_PROXY"
+                Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${LambdaFunction}/invocations"
+    ApiGatewayStage:
+        Type: AWS::ApiGateway::Stage
+        Properties:
+          DeploymentId: !Ref ApiGatewayDeployment
+          Description: Lambda API Stage v0
+          RestApiId: !Ref ApiGatewayRestApi
+          StageName: 'v0'
+    ApiGatewayDeployment:
+        Type: AWS::ApiGateway::Deployment
+        DependsOn: ApiGatewayMethod
+        Properties:
+          Description: Lambda API Deployment
+          RestApiId: !Ref ApiGatewayRestApi
+    LambdaPermission:
+        Type: "AWS::Lambda::Permission"
+        Properties:
+            Action: "lambda:InvokeFunction"
+            FunctionName: !GetAtt LambdaFunction.Arn
+            Principal: "apigateway.amazonaws.com"
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*/"
+
+Outputs:
+  ApiGatewayEndpoint:
+    Description: API Gateway endpoint that will be used to configure Telegram bot webhooks
+    Value: !Sub "https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiGatewayStage}/"
