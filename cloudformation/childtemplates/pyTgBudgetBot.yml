@@ -103,14 +103,14 @@ Resources:
                   TG_URL: 'api.telegram.org'
                   CALLBACK_TABLE: 'CallbackTable'
                   DATA_TABLE: 'DataTable'
-                  BOT_NAME: 'DecentDillyallBot'
+                  BOT_NAME: 'FleetMorselBot'
           Tags:
             ServiceName: !Ref ServiceName
             StackName: !Ref AWS::StackName
     ApiGatewayRestApi:
           Type: "AWS::ApiGateway::RestApi"
           Properties:
-              Name: !Sub "ApiGatewayRestApi"
+              Name: ApiGatewayRestApi
               ApiKeySourceType: "HEADER"
               Description: An API Gateway with a Lambda Integration
               EndpointConfiguration:
