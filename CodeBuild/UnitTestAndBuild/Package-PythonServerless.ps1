@@ -11,16 +11,16 @@ if ([String]::IsNullOrWhiteSpace($env:ARTIFACT_S3_BUCKET)) {
     throw 'The environment variable ARTIFACT_S3_BUCKET must be configured.'
 }
 
-Write-Host("codeBuildRoot: When executing in CodeBuild, this file is executed from the root of the CodeBuild environment. " +
+Write-Host ("codeBuildRoot: When executing in CodeBuild, this file is executed from the root of the CodeBuild environment. " +
     "Setting this to a variable to assist with path generation." )
 $codeBuildRoot = $env:CODEBUILD_SRC_DIR
-Write-Host"codeBuildRoot is: $($codeBuildRoot)"
+Write-Host "codeBuildRoot is: $($codeBuildRoot)"
 
 $pythonLambdaRoot = [System.IO.Path]::Combine($codeBuildRoot, 'lambdafunctions', 'python')
-Write-Host"pythonLambdaRoot is $pythonLambdaRoot"
+Write-Host "pythonLambdaRoot is $pythonLambdaRoot"
 
 $lambdaHandlerSourceFiles = [System.IO.Path]::Combine($pythonLambdaRoot, 'src', '*.py')
-Write-Host"lambdaHandlerSourceFiles is $lambdaHandlerSourceFiles"
+Write-Host "lambdaHandlerSourceFiles is $lambdaHandlerSourceFiles"
 Write-Host $($lambdaHandlerSourceFiles | format-table -AutoSize | Out-string)
 
 # $cfnServerlessApiPath = [System.IO.Path]::Combine($codeBuildRoot, 'cloudformation', 'apc-api')
