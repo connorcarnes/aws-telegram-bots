@@ -11,45 +11,53 @@ if ([String]::IsNullOrWhiteSpace($env:ARTIFACT_S3_BUCKET)) {
     throw 'The environment variable ARTIFACT_S3_BUCKET must be configured.'
 }
 
-Write-Host ("codeBuildRoot: When executing in CodeBuild, this file is executed from the root of the CodeBuild environment. " +
-    "Setting this to a variable to assist with path generation." )
+# Setting this to a variable to assist with path generation.
+Write-Host "When executing in CodeBuild, this file is executed from the root of the CodeBuild environment."
 $codeBuildRoot = $env:CODEBUILD_SRC_DIR
-Write-Host "codeBuildRoot is: $($codeBuildRoot)"
+Write-Host "codeBuildRoot is $codeBuildRoot"
 
 $pythonLambdaRoot = [System.IO.Path]::Combine($codeBuildRoot, 'lambdafunctions', 'python')
 Write-Host "pythonLambdaRoot is $pythonLambdaRoot"
 
-$lambdaHandlerSourceFiles = [System.IO.Path]::Combine($pythonLambdaRoot, 'src', '*.py')
-Write-Host "lambdaHandlerSourceFiles is $lambdaHandlerSourceFiles"
-Write-Host $($lambdaHandlerSourceFiles | format-table -AutoSize | Out-string)
+$lambdaSourcePath = [System.IO.Path]::Combine($pythonLambdaRoot, 'src')
+Write-Host "lambdaSourcePath is $lambdaSourcePath"
 
 # $cfnServerlessApiPath = [System.IO.Path]::Combine($codeBuildRoot, 'cloudformation', 'apc-api')
 # $lambdaSourceDestinationPath = [System.IO.Path]::Combine($cfnServerlessApiPath, 'src')
 
-$cfnCodeUriPath = [System.IO.Path]::Combine($env:CODEBUILD_SRC_DIR, 'cloudformation', 'childtemplates', 'src')
-Write-Host $cfnCodeUriPath
+# $cfnCodeUriPath = [System.IO.Path]::Combine($env:CODEBUILD_SRC_DIR, 'cloudformation', 'childtemplates', 'src')
+# Write-Host $cfnCodeUriPath
 # Create the Lambda destination path
-$null = [System.IO.Directory]::CreateDirectory($cfnCodeUriPath)
+$lambdaPackagePath = [System.IO.Path]::Combine($pythonLambdaRoot, 'pkg')
+$null = [System.IO.Directory]::CreateDirectory($lambdaPackagePath)
 # $null = [System.IO.Directory]::CreateDirectory($lambdaSourceDestinationPath)
+Write-Host "lambdaPackagePath is $lambdaPackagePath"
 
 # Copy the "handler" files to the destination root
-# Copy-Item -Path $lambdaHandlerSourceFiles -Destination $lambdaSourceDestinationPath -Force
-Copy-Item -Path $lambdaHandlerSourceFiles -Destination $cfnCodeUriPath -Force
+# Copy-Item -Path $lambdaSourcePath -Destination $lambdaSourceDestinationPath -Force
+Copy-Item -Path $lambdaSourcePath -Destination $lambdaPackagePath -Force
+
+pip install -t $lambdaPackagePath -r "$lambdaSourcePath\requirements.txt"
+
+$lambdaZipPath = [System.IO.Path]::Combine($pythonLambdaRoot, 'pkg.zip')
+Write-Host "lambdaZipPath is $lambdaZipPath"
+
+Get-ChildItem .\lambdafunctions\python\pkg\ | Compress-archive -DestinationPath .\lambdafunctions\python\pkg.zip
 
 # Copy all other Lambda source files to the destination, with folder structure
-$folders = Get-ChildItem -Path $pythonLambdaRoot -Directory | Where-Object {
-    $_.Name -notin ('__pycache__', 'src', 'tests')
-}
-Write-Host $($folders | format-table -AutoSize | Out-string)
-
-foreach ($folder in $folders) {
-    # Create the destination folder
-    # $destinationPath = [System.IO.Path]::Combine($lambdaSourceDestinationPath, $folder.Name)
-    $destinationPath = [System.IO.Path]::Combine($cfnCodeUriPath, $folder.Name)
-    $null = [System.IO.Directory]::CreateDirectory($destinationPath)
-    Write-Host "Copying $($folder.FullName)"
-    $sourceFiles = [System.IO.Path]::Combine($folder.FullName, '*.py')
-    Copy-Item -Path $sourceFiles -Destination $destinationPath -Force -Exclude '__pycache__'
-}
-
-Write-Host $(gci $cfnCodeUriPath -recurse | format-table -AutoSize | Out-string)
+# $folders = Get-ChildItem -Path $pythonLambdaRoot -Directory | Where-Object {
+#     $_.Name -notin ('__pycache__', 'src', 'tests')
+# }
+# Write-Host $($folders | format-table -AutoSize | Out-string)
+#
+# foreach ($folder in $folders) {
+#     # Create the destination folder
+#     # $destinationPath = [System.IO.Path]::Combine($lambdaSourceDestinationPath, $folder.Name)
+#     $destinationPath = [System.IO.Path]::Combine($cfnCodeUriPath, $folder.Name)
+#     $null = [System.IO.Directory]::CreateDirectory($destinationPath)
+#     Write-Host "Copying $($folder.FullName)"
+#     $sourceFiles = [System.IO.Path]::Combine($folder.FullName, '*.py')
+#     Copy-Item -Path $sourceFiles -Destination $destinationPath -Force -Exclude '__pycache__'
+# }
+#
+# Write-Host $(gci $cfnCodeUriPath -recurse | format-table -AutoSize | Out-string)

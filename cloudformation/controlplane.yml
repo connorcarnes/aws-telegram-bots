@@ -28,6 +28,10 @@ Parameters:
     Type: String
     Description: S3 Key Prefix for CodePipeline Artifacts
 
+  LMFunctionS3KeyPyTgBudgetBot:
+    Type: String
+    Description: S3 Key for the pwshLambdaExample Lambda function(s) zip file
+
 Resources:
   # Logical ID should be the same as the (child) nested template name - not required, but makes it easy to line things up and read
   pyTgBudgetBot:
@@ -45,6 +49,8 @@ Resources:
       Parameters: #much match the parameters of nested template
         ServiceName: !Ref ServiceName
         StackTag: !Ref StackTag
+        LMFunctionS3KeyPyTgBudgetBot: !Ref LMFunctionS3KeyPyTgBudgetBot
+        LambdaS3BucketName: !Ref ArtifactS3Bucket
       Tags:
         - Key: ServiceName
           Value: !Ref ServiceName

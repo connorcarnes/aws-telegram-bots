@@ -9,6 +9,14 @@ Parameters:
   StackTag:
     Type: String
     Description: An environment tag for this stack. Used to differentiate what resource need or should be created.
+
+  LambdaS3BucketName:
+    Type: String
+    Description: The S3 Bucket holding the Lambda code
+
+  LMFunctionS3KeyPyTgBudgetBot:
+    Type: String
+    Description: S3 Key for the pwshLambdaExample Lambda function(s) zip file
 Resources:
     DynamoDBTable:
         Type: "AWS::DynamoDB::Table"
@@ -87,12 +95,15 @@ Resources:
         Type: 'AWS::Serverless::Function'
         Properties:
           CodeUri:
-            Bucket: 'tg-budget-bot-bucket'
-            Key: 'lambda_pkg.zip'
+            Bucket: !Ref LambdaS3BucketName
+            Key: !Ref LMFunctionS3KeyPyTgBudgetBot
+          # CodeUri:
+          #   Bucket: 'tg-budget-bot-bucket'
+          #   Key: 'lambda_pkg.zip
           Description: ""
           FunctionName: "LambdaFunction"
           #Handler: "lambda_function.lambda_handler"
-          Handler: lambda_function.lambda_handler
+          Handler: handlers.budget_bot_handler
           MemorySize: 128
           Role: !GetAtt LambdaIamRole.Arn
           Runtime: "python3.9"
