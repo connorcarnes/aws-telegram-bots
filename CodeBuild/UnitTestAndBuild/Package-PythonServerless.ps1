@@ -33,9 +33,13 @@ $null = [System.IO.Directory]::CreateDirectory($lambdaPackagePath)
 # $null = [System.IO.Directory]::CreateDirectory($lambdaSourceDestinationPath)
 Write-Host "lambdaPackagePath is $lambdaPackagePath"
 
+Write-Host "Contents of $lambdaSourcePath is:`r`n $(Get-ChildItem $lambdaSourcePath | Format-Table -AutoSize | Out-String)"
+
 # Copy the "handler" files to the destination root
 # Copy-Item -Path $lambdaSourcePath -Destination $lambdaSourceDestinationPath -Force
-Copy-Item -Path $lambdaSourcePath -Destination $lambdaPackagePath -Force
+Get-ChildItem $lambdaSourcePath | Copy-Item -Destination $lambdaPackagePath -Force
+
+Write-Host "Contents of $lambdaPackagePath is:`r`n $(Get-ChildItem $lambdaPackagePath | Format-Table -AutoSize | Out-String)"
 
 $lambdaRequirementsPath = [System.IO.Path]::Combine($lambdaSourcePath, 'requirements.txt')
 Write-Host "lambdaRequirementsPathis $lambdaRequirementsPath"
@@ -44,7 +48,7 @@ pip install -t $lambdaPackagePath -r $lambdaRequirementsPath
 $lambdaZipPath = [System.IO.Path]::Combine($pythonLambdaRoot, 'pkg.zip')
 Write-Host "lambdaZipPath is $lambdaZipPath"
 
-Get-ChildItem .\lambdafunctions\python\pkg\ | Compress-archive -DestinationPath .\lambdafunctions\python\pkg.zip
+Get-ChildItem $lambdaPackagePath | Compress-archive -DestinationPath "$lambdaPackagePath.zip"
 
 aws s3 cp $lambdaZipPath s3://pytgbudgetbot-514215195183-artifacts/pkg.zip
 # Copy all other Lambda source files to the destination, with folder structure
