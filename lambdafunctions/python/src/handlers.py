@@ -9,12 +9,12 @@ from boto3.dynamodb.conditions import Attr
 CHAT = os.environ["TG_CHAT"]
 TOKEN = os.environ["TG_TOKEN"]
 URL = "https://api.telegram.org/bot{}/".format(TOKEN)
+CALLBACK_TABLE = os.environ["CALLBACK_TABLE"]
+DATA_TABLE = os.environ["DATA_TABLE"]
 headers = {}
 headers["Content-type"] = "application/json"
 headers["charset"] = "UTF-8"
 calc_values = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "."]
-callback_table = "test_table_00"
-data_table = "budget_data"
 
 
 def send_message(text):
@@ -163,23 +163,23 @@ def budget_bot_handler(event, context):
         answer_callback_query(item["callback_id"])
 
         if item["callback_data"] in calc_values:
-            put_item_dynamodb(callback_table, item)
+            put_item_dynamodb(CALLBACK_TABLE, item)
 
         elif item["callback_data"] == "done":
-            expense_amount = join_callback_data(callback_table, item)
+            expense_amount = join_callback_data(CALLBACK_TABLE, item)
             # Put item w/ expense_amount included into table
             item["expense_amount"] = expense_amount
-            put_item_dynamodb(callback_table, item)
+            put_item_dynamodb(CALLBACK_TABLE, item)
             # Have user confirm amount is correct
             confirm_expense_amount(expense_amount)
 
         elif item["callback_data"] == "yes":
-            # expense_amount = join_callback_data(callback_table, item)
+            # expense_amount = join_callback_data(CALLBACK_TABLE, item)
             # expense_amount = str(expense_amount)
 
-            expense_amount = join_callback_data(callback_table, item)
+            expense_amount = join_callback_data(CALLBACK_TABLE, item)
             item["expense_amount"] = expense_amount
-            put_item_dynamodb(data_table, item)
+            put_item_dynamodb(DATA_TABLE, item)
             ### TO DO: CLEAR ITEMS FROM CALLBACK TABLE
 
             send_message("Done!")

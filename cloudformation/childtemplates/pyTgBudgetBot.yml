@@ -101,6 +101,8 @@ Resources:
                   TG_TOKEN: ''
                   TG_CHAT: ''
                   TG_URL: 'api.telegram.org'
+                  CALLBACK_TABLE: 'CallbackTable'
+                  DATA_TABLE: 'DataTable'
           Tags:
             ServiceName: !Ref ServiceName
             StackName: !Ref AWS::StackName
