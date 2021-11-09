@@ -48,6 +48,8 @@ pip install -t $lambdaPackagePath -r $lambdaRequirementsPath
 $lambdaZipPath = [System.IO.Path]::Combine($pythonLambdaRoot, 'pkg.zip')
 Write-Host "lambdaZipPath is $lambdaZipPath"
 
+Write-Host "Contents of $lambdaPackagePath is:`r`n $(Get-ChildItem $lambdaPackagePath | Format-Table -AutoSize | Out-String)"
+
 Get-ChildItem $lambdaPackagePath | Compress-archive -DestinationPath "$lambdaPackagePath.zip"
 
 aws s3 cp $lambdaZipPath s3://pytgbudgetbot-514215195183-artifacts/pkg.zip

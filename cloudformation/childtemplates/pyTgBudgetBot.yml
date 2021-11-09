@@ -95,7 +95,7 @@ Resources:
         Type: 'AWS::Serverless::Function'
         Properties:
           CodeUri:
-            Bucket: !Ref LambdaS3BucketName
+            Bucket: pytgbudgetbot-514215195183-artifacts
             Key: pkg.zip
           # CodeUri:
           #   Bucket: 'tg-budget-bot-bucket'
