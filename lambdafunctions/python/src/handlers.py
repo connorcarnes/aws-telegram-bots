@@ -1,6 +1,5 @@
 def budget_bot_handler(event, context):
-    data = json.dumps(event["body"])
-    message = json.loads(data)
+    message = json.loads(event["body"])
     send_message(str(message))
 
     # Check if edited_message key exists
