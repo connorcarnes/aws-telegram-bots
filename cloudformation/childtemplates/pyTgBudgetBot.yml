@@ -9,14 +9,6 @@ Parameters:
   StackTag:
     Type: String
     Description: An environment tag for this stack. Used to differentiate what resource need or should be created.
-
-  LambdaS3BucketName:
-    Type: String
-    Description: The S3 Bucket holding the Lambda code
-
-  LMFunctionS3KeyPyTgBudgetBot:
-    Type: String
-    Description: S3 Key for the pwshLambdaExample Lambda function(s) zip file
 Resources:
     DynamoDBTable:
         Type: "AWS::DynamoDB::Table"
@@ -98,21 +90,17 @@ Resources:
             Bucket: pytgbudgetbot-514215195183-artifacts
             Key: pkg.zip
           Description: ""
-          FunctionName: "LambdaFunction"
-          #Handler: "lambda_function.lambda_handler"
+          FunctionName: !Sub "${ServiceName}Lambda"
           Handler: handlers.budget_bot_handler
-          MemorySize: 128
+          MemorySize: 1024
           Role: !GetAtt LambdaIamRole.Arn
-          Runtime: "python3.9"
-          Timeout: 3
+          Runtime: python3.9
+          Timeout: 900
           Environment:
               Variables:
                   TG_TOKEN: ''
                   TG_CHAT: ''
                   TG_URL: 'api.telegram.org'
-          # Code:
-          #     S3Bucket: 'tg-budget-bot-bucket'
-          #     S3Key: 'lambda_pkg.zip'
           Tags:
             ServiceName: !Ref ServiceName
             StackName: !Ref AWS::StackName
