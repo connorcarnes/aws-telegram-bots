@@ -46,6 +46,7 @@ Write-Host "lambdaZipPath is $lambdaZipPath"
 
 Get-ChildItem .\lambdafunctions\python\pkg\ | Compress-archive -DestinationPath .\lambdafunctions\python\pkg.zip
 
+aws s3 cp $lambdaZipPath s3://pytgbudgetbot-514215195183-artifacts/pkg.zip
 # Copy all other Lambda source files to the destination, with folder structure
 # $folders = Get-ChildItem -Path $pythonLambdaRoot -Directory | Where-Object {
 #     $_.Name -notin ('__pycache__', 'src', 'tests')

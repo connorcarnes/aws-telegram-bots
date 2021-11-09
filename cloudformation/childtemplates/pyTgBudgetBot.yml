@@ -96,7 +96,7 @@ Resources:
         Properties:
           CodeUri:
             Bucket: !Ref LambdaS3BucketName
-            Key: !Ref LMFunctionS3KeyPyTgBudgetBot
+            Key: pkg.zip
           # CodeUri:
           #   Bucket: 'tg-budget-bot-bucket'
           #   Key: 'lambda_pkg.zip
