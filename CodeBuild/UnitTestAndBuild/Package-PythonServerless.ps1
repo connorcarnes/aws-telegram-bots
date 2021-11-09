@@ -12,7 +12,7 @@ if ([String]::IsNullOrWhiteSpace($env:ARTIFACT_S3_BUCKET)) {
 }
 
 Write-Host("codeBuildRoot: When executing in CodeBuild, this file is executed from the root of the CodeBuild environment. " +
-    "Setting this to a variable to assist with path generation."
+    "Setting this to a variable to assist with path generation." )
 $codeBuildRoot = $env:CODEBUILD_SRC_DIR
 Write-Host"codeBuildRoot is: $($codeBuildRoot)"
 
