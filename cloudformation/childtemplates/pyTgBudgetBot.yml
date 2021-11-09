@@ -86,11 +86,13 @@ Resources:
     LambdaFunction:
         Type: 'AWS::Serverless::Function'
         Properties:
-          CodeUri: src
+          CodeUri:
+            Bucket: 'tg-budget-bot-bucket'
+            Key: 'lambda_pkg.zip'
           Description: ""
           FunctionName: "LambdaFunction"
           #Handler: "lambda_function.lambda_handler"
-          Handler: handlers.budget_bot_handler
+          Handler: lambda_function.lambda_handler
           MemorySize: 128
           Role: !GetAtt LambdaIamRole.Arn
           Runtime: "python3.9"
