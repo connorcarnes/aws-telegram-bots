@@ -95,7 +95,7 @@ Resources:
         Type: 'AWS::Serverless::Function'
         Properties:
           CodeUri:
-            Bucket: s3://pytgbudgetbot-514215195183-artifacts/
+            Bucket: pytgbudgetbot-514215195183-artifacts
             Key: pkg.zip
           Description: ""
           FunctionName: "LambdaFunction"
