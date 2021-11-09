@@ -5,6 +5,7 @@ Parameters:
   ServiceName:
     Type: String
     Description: 'Name of the service that will be used to tag each resource.'
+
   StackTag:
     Type: String
     Description: An environment tag for this stack. Used to differentiate what resource need or should be created.
