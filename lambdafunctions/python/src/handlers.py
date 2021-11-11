@@ -49,7 +49,7 @@ def set_callback_item(
 
 def join_callback_data(table_name, item):
     """
-    Joins callback data values in the order they were entered and returns the value
+    Joins callback data values in the order they were entered and returns the value.
     """
     dynamodb = boto3.resource("dynamodb")
     table = dynamodb.Table(table_name)
