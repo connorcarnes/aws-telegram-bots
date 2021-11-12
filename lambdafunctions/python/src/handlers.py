@@ -121,8 +121,9 @@ def send_numpad():
 
 
 def budget_bot_handler(event, context):
-    message = json.loads(event["body"])
-    # send_message(str(message))
+    # message = json.loads(event["body"])
+    message = json.loads(event)
+    send_message(str(message))
     if "edited_message" in message:
         send_message("Detected edited message. Doing nothing.")
     elif "callback_query" in message:
