@@ -1,4 +1,4 @@
-from shared.tgBudgetBot import *
+from tgBudgetBot import *
 
 
 def budget_bot_handler(event, context):
