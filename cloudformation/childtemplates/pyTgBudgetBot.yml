@@ -98,12 +98,13 @@ Resources:
           Timeout: 900
           Environment:
               Variables:
-                  TG_TOKEN: ''
-                  TG_CHAT: ''
+                  BOT_TOKEN: ''
+                  CHAT_ID: ''
                   TG_URL: 'api.telegram.org'
                   CALLBACK_TABLE: 'CallbackTable'
                   DATA_TABLE: 'DataTable'
                   BOT_NAME: 'FleetMorselBot'
+                  TEST_VAR: "{{resolve:secretsmanager:py-telegram-budget-bot:ChatID}}"
           Tags:
             ServiceName: !Ref ServiceName
             StackName: !Ref AWS::StackName
