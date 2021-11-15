@@ -104,7 +104,6 @@ Resources:
                   CALLBACK_TABLE: 'CallbackTable'
                   DATA_TABLE: 'DataTable'
                   BOT_NAME: 'FleetMorselBot'
-                  TEST_VAR: "{{resolve:secretsmanager:py-telegram-budget-bot:ChatID}}"
           Tags:
             ServiceName: !Ref ServiceName
             StackName: !Ref AWS::StackName
