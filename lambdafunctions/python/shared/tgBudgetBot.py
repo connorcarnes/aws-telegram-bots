@@ -1,9 +1,9 @@
 import json
 import os
 import requests
-import datetime
 import boto3
 from boto3.dynamodb.conditions import Attr
+from datetime import datetime
 
 
 CHAT = os.environ["CHAT_ID"]
@@ -115,7 +115,6 @@ def get_user_expenses(table_name, item):
         FilterExpression=Attr("user_id").eq(item["user_id"])
         and Attr("expense_amount").exists()
     )
-
     table = "Time" + ": " + "Amount" + "\n"
     for x in response["Items"]:
         date = datetime.utcfromtimestamp(x["date"].__int__()).strftime(
@@ -124,7 +123,6 @@ def get_user_expenses(table_name, item):
         amount = x["expense_amount"]
         entry = date + ": " + amount + "\n"
         table += entry
-
     message = "<pre>" + table + "</pre>"
     send_message(message, "HTML")
 
