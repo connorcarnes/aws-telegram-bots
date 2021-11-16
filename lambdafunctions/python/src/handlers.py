@@ -1,7 +1,3 @@
-from lambdafunctions.python.shared.tgBudgetBot import (
-    DATA_TABLE,
-    get_latest_user_expense_amount,
-)
 from tgBudgetBot import *
 
 
