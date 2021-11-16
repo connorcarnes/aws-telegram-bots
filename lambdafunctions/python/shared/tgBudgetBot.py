@@ -17,8 +17,13 @@ headers["charset"] = "UTF-8"
 calc_values = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "."]
 
 
-def send_message(text):
-    url = URL + "sendMessage?text={}&chat_id={}".format(text, CHAT)
+def send_message(text, parse_mode):
+    if not parse_mode:
+        url = URL + "sendMessage?text={}&chat_id={}".format(text, CHAT)
+    else:
+        url = URL + "sendMessage?text={}&chat_id={}&parse_mode={}".format(
+            text, CHAT, parse_mode
+        )
     requests.post(url, headers)
 
 
@@ -67,6 +72,22 @@ def join_callback_data(table_name, item):
         return str("".join(expense_amount))
 
 
+def get_latest_user_expense_amount(table_name, item):
+    """
+    Gets items from the callback table that have the specified user_id and an expense_amount,
+    sorts them by date and returns the latest one.
+    """
+    dynamodb = boto3.resource("dynamodb")
+    table = dynamodb.Table(table_name)
+    response = table.scan(
+        FilterExpression=Attr("user_id").eq(item["user_id"])
+        and Attr("expense_amount").exists()
+    )
+    # Get the most recent expense
+    response["Items"].sort(reverse=True, key=lambda x: x["date"])
+    return response["Items"][0]["expense_amount"]
+
+
 def confirm_expense_amount(expense_amount):
     button_one = {"text": "yes", "callback_data": "yes"}
     button_two = {"text": "no", "callback_data": "no"}
@@ -81,6 +102,30 @@ def confirm_expense_amount(expense_amount):
     request = requests.post(url, headers)
     if request.ok is not True:
         send_message(request.text)
+
+
+def get_user_expenses(table_name, item):
+    """
+    Gets all the expenses for the specified user.
+    """
+    dynamodb = boto3.resource("dynamodb")
+    table = dynamodb.Table(table_name)
+    response = table.scan(
+        FilterExpression=Attr("user_id").eq(item["user_id"])
+        and Attr("expense_amount").exists()
+    )
+
+    table = "Time" + ": " + "Amount" + "\n"
+    for x in response["Items"]:
+        date = datetime.utcfromtimestamp(x["date"].__int__()).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+        amount = x["expense_amount"]
+        entry = date + ": " + amount + "\n"
+        table += entry
+
+    message = "<pre>" + table + "</pre>"
+    send_message(message, "HTML")
 
 
 def answer_callback_query(callback_id):

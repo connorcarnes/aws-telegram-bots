@@ -1,3 +1,7 @@
+from lambdafunctions.python.shared.tgBudgetBot import (
+    DATA_TABLE,
+    get_latest_user_expense_amount,
+)
 from tgBudgetBot import *
 
 
@@ -25,10 +29,11 @@ def budget_bot_handler(event, context):
             put_item_dynamodb(CALLBACK_TABLE, item)
             confirm_expense_amount(expense_amount)
         elif item["callback_data"] == "yes":
-            expense_amount = join_callback_data(CALLBACK_TABLE, item)
+            expense_amount = get_latest_user_expense_amount(CALLBACK_TABLE, item)
             item["expense_amount"] = expense_amount
             put_item_dynamodb(DATA_TABLE, item)
-            send_message("Done!")
+            message = "Added expense of " + str(expense_amount) + " to the database."
+            send_message(message)
         elif item["callback_data"] == "no":
             send_message("Ok, resend the command and try again!")
         else:
@@ -48,7 +53,12 @@ def budget_bot_handler(event, context):
                     or message_text == "/add_expense"
                 ):
                     send_numpad()
-
+                elif (
+                    entity_type == "bot_command"
+                    and message_text == "/get_my_expenses@" + BOT_NAME
+                    or message_text == "/get_my_expenses"
+                ):
+                    get_user_expenses(DATA_TABLE, item)
                 else:
                     send_message("New bot command?")
         else:
