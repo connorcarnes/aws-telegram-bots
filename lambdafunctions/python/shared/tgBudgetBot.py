@@ -17,8 +17,8 @@ headers["charset"] = "UTF-8"
 calc_values = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "."]
 
 
-def send_message(text, parse_mode):
-    if not parse_mode:
+def send_message(text, parse_mode=""):
+    if parse_mode == "":
         url = URL + "sendMessage?text={}&chat_id={}".format(text, CHAT)
     else:
         url = URL + "sendMessage?text={}&chat_id={}&parse_mode={}".format(
