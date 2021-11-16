@@ -56,9 +56,7 @@ def budget_bot_handler(event, context):
                 ):
                     item = set_callback_item(
                         update_id=message["update_id"],
-                        callback_id=message["callback_query"]["id"],
                         chat_id=message["callback_query"]["message"]["chat"]["id"],
-                        callback_data=message["callback_query"]["data"],
                         date=message["callback_query"]["message"]["date"],
                         message_id=message["callback_query"]["message"]["message_id"],
                         user_id=message["callback_query"]["from"]["id"],

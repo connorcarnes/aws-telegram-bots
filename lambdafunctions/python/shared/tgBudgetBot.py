@@ -39,16 +39,16 @@ def put_item_dynamodb(table_name, item):
 
 
 def set_callback_item(
-    update_id, callback_id, chat_id, callback_data, date, message_id, user_id
+    update_id, chat_id, date, message_id, user_id, callback_id="", callback_data=""
 ):
     return {
         "update_id": update_id,
-        "callback_id": callback_id,
         "chat_id": chat_id,
-        "callback_data": callback_data,
         "date": date,
         "message_id": message_id,
         "user_id": user_id,
+        "callback_id": callback_id,
+        "callback_data": callback_data,
     }
 
 
