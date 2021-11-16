@@ -54,13 +54,13 @@ def budget_bot_handler(event, context):
                     and message_text == "/get_my_expenses@" + BOT_NAME
                     or message_text == "/get_my_expenses"
                 ):
-                    item = set_callback_item(
-                        update_id=message["update_id"],
-                        chat_id=message["callback_query"]["message"]["chat"]["id"],
-                        date=message["callback_query"]["message"]["date"],
-                        message_id=message["callback_query"]["message"]["message_id"],
-                        user_id=message["callback_query"]["from"]["id"],
-                    )
+                    item = {
+                        "update_id": message["update_id"],
+                        "chat_id": message["message"]["chat"]["id"],
+                        "date": message["message"]["date"],
+                        "message_id": message["message"]["message_id"],
+                        "user_id": message["message"]["from"]["id"],
+                    }
                     get_user_expenses(DATA_TABLE, item)
                 else:
                     send_message("New bot command?")
