@@ -71,6 +71,15 @@ Resources:
                             "Resource": [
                                 "arn:aws:logs:*:*:*"
                             ]
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "kms:Decrypt"
+                            ],
+                            "Resource": [
+                                "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/2cfefa65-a316-4706-a598-5e0b8cb057e9"
+                            ]
                         }
                     ]
                 }
@@ -104,6 +113,7 @@ Resources:
                   CALLBACK_TABLE: 'CallbackTable'
                   DATA_TABLE: 'DataTable'
                   BOT_NAME: 'FleetMorselBot'
+                  TEST: '{{resolve:ssm:/tgbots/fleetmorsel/test}}'
           Tags:
             ServiceName: !Ref ServiceName
             StackName: !Ref AWS::StackName
