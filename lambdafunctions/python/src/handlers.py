@@ -1,4 +1,4 @@
-from tgBudgetBot import *
+from pyServerlessTelegramBot import *
 
 
 # def test_handler(event, context):
@@ -7,7 +7,7 @@ from tgBudgetBot import *
 #     return {"statusCode": 200}
 
 
-def budget_bot_handler(event, context):
+def fleet_morsel_bot_handler(event, context):
     message = json.loads(event["body"])
     # send_message(str(message))
     if "edited_message" in message:

@@ -85,7 +85,7 @@ Resources:
             Key: pkg.zip
           Description: ""
           FunctionName: !Sub "${ServiceName}Lambda"
-          Handler: handlers.budget_bot_handler
+          Handler: handlers.fleet_morsel_bot_handler
           MemorySize: 1024
           Role: !GetAtt LambdaIamRole.Arn
           Runtime: python3.9
