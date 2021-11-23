@@ -13,7 +13,7 @@ Resources:
     TestLambdaPolicy:
         Type: "AWS::IAM::ManagedPolicy"
         Properties:
-            ManagedPolicyName: "LambdaEdgeExecutionRole"
+            ManagedPolicyName: "TestLambdaExecutionRole"
             Path: "/service-role/"
             PolicyDocument: !Sub |
                 {
