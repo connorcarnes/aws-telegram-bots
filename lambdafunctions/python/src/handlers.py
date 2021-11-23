@@ -1,21 +1,10 @@
 from tgBudgetBot import *
-from base64 import b64decode
-
-b64_var = os.environ["TEST"]
-ciphertext = b64decode(b64_var)
-kms = boto3.client("kms")
-values = kms.decrypt(CiphertextBlob=ciphertext)
-final = json.loads(
-    (kms.decrypt(CiphertextBlob=ciphertext))["Plaintext"].decode("utf-8")
-)
 
 
-def test_handler(event, context):
-    message = "TO STRING: " + str(final)
-    send_message(message)
-    message = "TYPE: " + type(final)
-    send_message(message)
-    return {"statusCode": 200}
+# def test_handler(event, context):
+#     message = "TO STRING: " + str(env_dict)
+#     send_message(message)
+#     return {"statusCode": 200}
 
 
 def budget_bot_handler(event, context):

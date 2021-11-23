@@ -4,14 +4,21 @@ import requests
 import boto3
 from boto3.dynamodb.conditions import Attr
 from datetime import datetime
+from base64 import b64decode
 
+kms = boto3.client("kms")
+env_dict = json.loads(
+    (kms.decrypt(CiphertextBlob=(b64decode((os.environ["EncryptedJson"])))))[
+        "Plaintext"
+    ].decode("utf-8")
+)
 
-CHAT = os.environ["CHAT_ID"]
-TOKEN = os.environ["BOT_TOKEN"]
+for key, val in env_dict.items():
+    exec(key + "=val")
+
+CHAT = CHAT_ID
+TOKEN = BOT_TOKEN
 URL = "https://api.telegram.org/bot{}/".format(TOKEN)
-CALLBACK_TABLE = os.environ["CALLBACK_TABLE"]
-DATA_TABLE = os.environ["DATA_TABLE"]
-BOT_NAME = os.environ["BOT_NAME"]
 headers = {}
 headers["Content-type"] = "application/json"
 headers["charset"] = "UTF-8"

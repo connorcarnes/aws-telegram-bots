@@ -107,13 +107,7 @@ Resources:
           Timeout: 900
           Environment:
               Variables:
-                  BOT_TOKEN: ''
-                  CHAT_ID: ''
-                  TG_URL: 'api.telegram.org'
-                  CALLBACK_TABLE: 'CallbackTable'
-                  DATA_TABLE: 'DataTable'
-                  BOT_NAME: 'FleetMorselBot'
-                  TEST: '{{resolve:ssm:/tgbots/fleetmorsel/test}}'
+                  EncryptedJson: '{{resolve:ssm:/tgbots/fleetmorsel/secrets}}'
           Tags:
             ServiceName: !Ref ServiceName
             StackName: !Ref AWS::StackName
