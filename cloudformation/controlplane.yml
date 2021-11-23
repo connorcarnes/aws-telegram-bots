@@ -30,10 +30,10 @@ Parameters:
 
 Resources:
   # Logical ID should be the same as the (child) nested template name - not required, but makes it easy to line things up and read
-  pyTgBudgetBot:
+  FleetMorsel:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: ./childtemplates/pyTgBudgetBot.yml
+      TemplateURL: ./childtemplates/FleetMorsel.yml
       # TemplateURL: !Sub
       #   # - "https://${ArtifactS3Bucket}.s3.${AWSRegion}.amazonaws.com/${ArtifactS3KeyPrefix}/${FileName}"
       #   - "https://s3-${AWSRegion}.amazonaws.com/${ArtifactS3Bucket}/${ArtifactS3KeyPrefix}/${FileName}"
