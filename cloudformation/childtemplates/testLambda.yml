@@ -10,7 +10,7 @@ Parameters:
     Type: String
     Description: An environment tag for this stack. Used to differentiate what resource need or should be created.
 Resources:
-    IAMManagedPolicy:
+    TestLambdaPolicy:
         Type: "AWS::IAM::ManagedPolicy"
         Properties:
             ManagedPolicyName: "LambdaEdgeExecutionRole"
@@ -41,16 +41,16 @@ Resources:
                         }
                     ]
                 }
-    LambdaIamRole:
+    TestLambdaRole:
         Type: "AWS::IAM::Role"
         Properties:
             Path: "/service-role/"
-            RoleName: "LambdaIamRole"
+            RoleName: "TestLambdaRole"
             AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":[\"lambda.amazonaws.com\",\"edgelambda.amazonaws.com\"]},\"Action\":\"sts:AssumeRole\"}]}"
             MaxSessionDuration: 3600
             ManagedPolicyArns:
-              - !Ref IAMManagedPolicy
-    LambdaFunction:
+              - !Ref TestLambdaPolicy
+    TestLambda:
         Type: 'AWS::Serverless::Function'
         Properties:
           CodeUri:
@@ -60,7 +60,7 @@ Resources:
           FunctionName: !Sub "${ServiceName}Lambda"
           Handler: handlers.test_handler
           MemorySize: 1024
-          Role: !GetAtt LambdaIamRole.Arn
+          Role: !GetAtt TestLambdaRole.Arn
           Runtime: python3.9
           Timeout: 900
           Environment:
@@ -69,20 +69,20 @@ Resources:
           Tags:
             ServiceName: !Ref ServiceName
             StackName: !Ref AWS::StackName
-    ApiGatewayRestApi:
+    TestLambdaRestApi:
           Type: "AWS::ApiGateway::RestApi"
           Properties:
-              Name: ApiGatewayRestApi
+              Name: TestLambdaRestApi
               ApiKeySourceType: "HEADER"
               Description: An API Gateway with a Lambda Integration
               EndpointConfiguration:
                   Types:
                     - "REGIONAL"
-    ApiGatewayMethod:
+    TestLambdaMethod:
         Type: "AWS::ApiGateway::Method"
         Properties:
-            RestApiId: !Ref ApiGatewayRestApi
-            ResourceId: !GetAtt ApiGatewayRestApi.RootResourceId
+            RestApiId: !Ref TestLambdaRestApi
+            ResourceId: !GetAtt TestLambdaRestApi.RootResourceId
             HttpMethod: "ANY"
             AuthorizationType: "NONE"
             ApiKeyRequired: false
@@ -102,29 +102,29 @@ Resources:
                 PassthroughBehavior: "WHEN_NO_MATCH"
                 TimeoutInMillis: 29000
                 Type: "AWS_PROXY"
-                Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${LambdaFunction}/invocations"
-    ApiGatewayStage:
+                Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${TestLambda}/invocations"
+    TestLambdaStage:
         Type: AWS::ApiGateway::Stage
         Properties:
-          DeploymentId: !Ref ApiGatewayDeployment
+          DeploymentId: !Ref TestLambdaDeployment
           Description: Lambda API Stage v0
-          RestApiId: !Ref ApiGatewayRestApi
+          RestApiId: !Ref TestLambdaRestApi
           StageName: 'v0'
-    ApiGatewayDeployment:
+    TestLambdaDeployment:
         Type: AWS::ApiGateway::Deployment
-        DependsOn: ApiGatewayMethod
+        DependsOn: TestLambdaMethod
         Properties:
           Description: Lambda API Deployment
-          RestApiId: !Ref ApiGatewayRestApi
+          RestApiId: !Ref TestLambdaRestApi
     LambdaPermission:
         Type: "AWS::Lambda::Permission"
         Properties:
             Action: "lambda:InvokeFunction"
-            FunctionName: !GetAtt LambdaFunction.Arn
+            FunctionName: !GetAtt TestLambda.Arn
             Principal: "apigateway.amazonaws.com"
-            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*/"
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TestLambdaRestApi}/*/*/"
 
 Outputs:
-  ApiGatewayEndpoint:
+  TestLambdaEndpoint:
     Description: API Gateway endpoint that will be used to configure Telegram bot webhooks
-    Value: !Sub "https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiGatewayStage}/"
+    Value: !Sub "https://${TestLambdaRestApi}.execute-api.${AWS::Region}.amazonaws.com/${TestLambdaStage}/"
