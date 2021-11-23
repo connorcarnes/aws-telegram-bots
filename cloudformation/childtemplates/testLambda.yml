@@ -57,7 +57,7 @@ Resources:
             Bucket: pytgbudgetbot-514215195183-artifacts
             Key: pkg.zip
           Description: ""
-          FunctionName: !Sub "${ServiceName}Lambda"
+          FunctionName: !Sub "${ServiceName}testLambda"
           Handler: handlers.test_handler
           MemorySize: 1024
           Role: !GetAtt TestLambdaRole.Arn
