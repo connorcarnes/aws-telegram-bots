@@ -22,22 +22,6 @@ Resources:
                         {
                             "Effect": "Allow",
                             "Action": [
-                                "dynamodb:BatchGetItem",
-                                "dynamodb:GetItem",
-                                "dynamodb:Query",
-                                "dynamodb:Scan",
-                                "dynamodb:BatchWriteItem",
-                                "dynamodb:PutItem",
-                                "dynamodb:UpdateItem"
-                            ],
-                            "Resource": [
-                                "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBTable2}",
-                                "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBTable}"
-                            ]
-                        },
-                        {
-                            "Effect": "Allow",
-                            "Action": [
                                 "logs:CreateLogGroup",
                                 "logs:CreateLogStream",
                                 "logs:PutLogEvents"
