@@ -11,8 +11,6 @@ final = json.loads(
 
 
 def test_handler(event, context):
-    message = "RAW: " + final
-    send_message(message)
     message = "TO STRING: " + str(final)
     send_message(message)
     message = "TYPE: " + type(final)
