@@ -67,6 +67,11 @@ Parameters:
     Description: 'The GitHub Repository path to the buildspec.yml'
     Default: "CodeBuild/UnitTestAndBuild/buildspec.yml"
 
+  PathToIntegrationTestBuildSpecTemplate:
+    Type: String
+    Description: 'The GitHub Repository path to the buildspec.yml'
+    Default: "CodeBuild/IntegrationTest/buildspec.yml"
+
   PathToControlPlaneTemplate:
     Type: String
     Description: 'The GitHub Repository path to the Control Plane CloudFormation Template'
@@ -374,7 +379,7 @@ Resources:
         # SourceIdentifier:
         Type: GITHUB
       # SourceVersion:
-      TimeoutInMinutes: 30
+      TimeoutInMinutes: 10
       # Triggers:
       # VpcConfig:
       Tags:
@@ -386,59 +391,59 @@ Resources:
           Value: !Ref AWS::StackName
 
   # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-codebuild-project.html
-  # IntegrationTestProject:
-  #   Type: AWS::CodeBuild::Project
-  #   Properties:
-  #     Artifacts:
-  #       Type: NO_ARTIFACTS
-  #     # BadgeEnabled:
-  #     # Cache:
-  #     Description: Integration Testing
-  #     EncryptionKey: !GetAtt KMSKey.Arn
-  #     Environment:
-  #       # Certificate:
-  #       ComputeType: BUILD_GENERAL1_SMALL  #3GB Memory | 2 vCPU | 64GB HD
-  #       Type: LINUX_CONTAINER
-  #       Image: 'aws/codebuild/standard:3.0'
-  #       EnvironmentVariables:
-  #         - Name: ARTIFACT_S3_BUCKET
-  #           Value: !Ref GitHubCPSyncArtifactS3Bucket
-  #         - Name: S3_KEY_PREFIX
-  #           Value: 'SingleAccount'
-  #         - Name: GIT_REPO
-  #           Value: !Ref GitHubRepositoryName
-  #         - Name: IntegrationTestIAMRole
-  #           Value: !GetAtt IntegrationTestIAMRole.Arn
-  #         - Name: AWSRegion
-  #           Value: !Sub ${AWS::Region}
-  #     # LogsConfig:
-  #     Name: !Sub "${ServiceName}-IntegrationTest"
-  #     # QueuedTimeoutInMinutes:
-  #     # SecondaryArtifacts:
-  #     # SecondarySources:
-  #     ServiceRole: !GetAtt CodeBuildRole.Arn
-  #     Source:
-  #       # Auth:
-  #       BuildSpec: CodeBuild/IntegrationTest/buildspec.yml
-  #       # GitCloneDepth:
-  #       # GitSubmodulesConfig:
-  #       # InsecureSsl:
-  #       # https://github.com/techthoughts2/praetor_bot.git
-  #       Location: !Sub https://github.com/${GitHubOwner}/${GitHubRepositoryName}.git
-  #       ReportBuildStatus: true
-  #       # SourceIdentifier:
-  #       Type: GITHUB
-  #     # SourceVersion:
-  #     TimeoutInMinutes: 45
-  #     # Triggers:
-  #     # VpcConfig:
-  #     Tags:
-  #       - Key: Name
-  #         Value: !Sub "${ServiceName}-IntegrationTest"
-  #       - Key: ServiceName
-  #         Value: !Ref ServiceName
-  #       - Key: StackName
-  #         Value: !Ref AWS::StackName
+  IntegrationTestProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: NO_ARTIFACTS
+      # BadgeEnabled:
+      # Cache:
+      Description: Integration Testing
+      EncryptionKey: !GetAtt KMSKey.Arn
+      Environment:
+        # Certificate:
+        ComputeType: BUILD_GENERAL1_SMALL  #3GB Memory | 2 vCPU | 64GB HD
+        Type: LINUX_CONTAINER
+        Image: !Ref CodeBuildImage
+        EnvironmentVariables:
+          - Name: ARTIFACT_S3_BUCKET
+            Value: !Ref GitHubCPSyncArtifactS3Bucket
+          - Name: S3_KEY_PREFIX
+            Value: 'SingleAccount'
+          - Name: GIT_REPO
+            Value: !Ref GitHubRepositoryName
+          # - Name: IntegrationTestIAMRole
+          #   Value: !GetAtt IntegrationTestIAMRole.Arn
+          - Name: AWSRegion
+            Value: !Sub ${AWS::Region}
+      # LogsConfig:
+      Name: !Sub "${ServiceName}-IntegrationTest"
+      # QueuedTimeoutInMinutes:
+      # SecondaryArtifacts:
+      # SecondarySources:
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Source:
+        # Auth:
+        BuildSpec: !Ref PathToIntegrationTestBuildSpecTemplate
+        # GitCloneDepth:
+        # GitSubmodulesConfig:
+        # InsecureSsl:
+        # https://github.com/techthoughts2/praetor_bot.git
+        Location: !Sub https://github.com/${GitHubOwner}/${GitHubRepositoryName}.git
+        ReportBuildStatus: true
+        # SourceIdentifier:
+        Type: GITHUB
+      # SourceVersion:
+      TimeoutInMinutes: 10
+      # Triggers:
+      # VpcConfig:
+      Tags:
+        - Key: Name
+          Value: !Sub "${ServiceName}-IntegrationTest"
+        - Key: ServiceName
+          Value: !Ref ServiceName
+        - Key: StackName
+          Value: !Ref AWS::StackName
 
   # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html
   GitHubCPSyncCodePipelineRole:
@@ -505,8 +510,8 @@ Resources:
                 Resource:
                   - !Sub arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${UnitTestAndBuildProject}
                   - !Sub arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:build/${UnitTestAndBuildProject}:*
-                  # - !Sub arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${IntegrationTestProject}
-                  # - !Sub arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:build/${IntegrationTestProject}:*
+                  - !Sub arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${IntegrationTestProject}
+                  - !Sub arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:build/${IntegrationTestProject}:*
               -
                 Effect: Allow
                 Action:
@@ -635,20 +640,20 @@ Resources:
                 TemplatePath: !Sub "CFNTemplateArtifact::${PathToControlPlaneTemplate}"
               RunOrder: 1
               RoleArn: !GetAtt GitHubCPSyncCodePipelineRole.Arn
-            # -
-            #   Name: ValidateStack
-            #   InputArtifacts:
-            #     - Name: GitHubSourceCode
-            #   ActionTypeId:
-            #     Category: Test
-            #     Owner: AWS
-            #     Version: "1"
-            #     Provider: CodeBuild
-            #   OutputArtifacts:
-            #     - Name: ValidatedStack
-            #   Configuration:
-            #     ProjectName: !Ref IntegrationTestProject
-            #   RunOrder: 2
+            -
+              Name: ValidateStack
+              InputArtifacts:
+                - Name: GitHubSourceCode
+              ActionTypeId:
+                Category: Test
+                Owner: AWS
+                Version: "1"
+                Provider: CodeBuild
+              OutputArtifacts:
+                - Name: ValidatedStack
+              Configuration:
+                ProjectName: !Ref IntegrationTestProject
+              RunOrder: 2
 
 Outputs:
 
@@ -674,3 +679,9 @@ Outputs:
     Description: CodeBuild Unit Test And Build Project
     Export:
       Name: !Sub ${ServiceName}-GitHubSyncUnitTestAndBuildProject
+
+  IntegrationTestProject:
+    Value: !Ref IntegrationTestProject
+    Description: CodeBuild Integration Test Project
+    Export:
+      Name: !Sub ${ServiceName}-GitHubSyncIntegrationTestProject
