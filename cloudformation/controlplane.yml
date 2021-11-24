@@ -20,11 +20,6 @@ Parameters:
     Type: String
     Description: An environment tag for this stack. Used to differentiate what resource need or should be created.
 
-  StackName:
-    Type: String
-    Description: An environment tag for this stack. Used to differentiate what resource need or should be created.
-    Default: !Ref AWS::StackName
-
   ArtifactS3Bucket:
     Type: String
     Description: S3 Bucket for CodePipeline Artifacts
@@ -50,14 +45,13 @@ Resources:
       Parameters: #much match the parameters of nested template
         ServiceName: !Ref ServiceName
         StackTag: !Ref StackTag
-        StackName: !Ref StackName
       Tags:
         - Key: ServiceName
           Value: !Ref ServiceName
         - Key: StackTag
           Value: !Ref StackTag
         - Key: StackName
-          Value: !Ref StackName
+          Value: !Ref AWS::StackName
 
   # testLambda:
   #   Type: AWS::CloudFormation::Stack
