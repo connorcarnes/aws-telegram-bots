@@ -11,6 +11,7 @@ Parameters:
   StackName:
     Type: String
     Description: An environment tag for this stack. Used to differentiate what resource need or should be created.
+    Default: !Ref AWS::StackName
 Resources:
     DynamoDBTable:
         Type: "AWS::DynamoDB::Table"
