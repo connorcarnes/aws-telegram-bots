@@ -39,7 +39,7 @@ Resources:
     IAMManagedPolicy:
         Type: 'AWS::IAM::ManagedPolicy'
         Properties:
-            ManagedPolicyName: 'LambdaEdgeExecutionRole'
+            ManagedPolicyName: !Sub '${ServiceName}-LambdaEdgeExecutionRole'
             Path: '/service-role/'
             PolicyDocument:
               Version: '2012-10-17'

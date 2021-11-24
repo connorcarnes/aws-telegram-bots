@@ -16,9 +16,7 @@ env_dict = json.loads(
 for key, val in env_dict.items():
     exec(key + "=val")
 
-CHAT = CHAT_ID
-TOKEN = BOT_TOKEN
-URL = "https://api.telegram.org/bot{}/".format(TOKEN)
+URL = "https://api.telegram.org/bot{}/".format(BOT_TOKEN)
 headers = {}
 headers["Content-type"] = "application/json"
 headers["charset"] = "UTF-8"
@@ -27,10 +25,10 @@ calc_values = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "."]
 
 def send_message(text, parse_mode=""):
     if parse_mode == "":
-        url = URL + "sendMessage?text={}&chat_id={}".format(text, CHAT)
+        url = URL + "sendMessage?text={}&chat_id={}".format(text, CHAT_ID)
     else:
         url = URL + "sendMessage?text={}&chat_id={}&parse_mode={}".format(
-            text, CHAT, parse_mode
+            text, CHAT_ID, parse_mode
         )
     requests.post(url, headers)
 
@@ -105,7 +103,7 @@ def confirm_expense_amount(expense_amount):
     reply_markup_json = json.dumps(reply_markup)
     msg = "You entered " + expense_amount + ", is this correct?"
     url = URL + "sendMessage?text={}&chat_id={}&reply_markup={}".format(
-        msg, CHAT, reply_markup_json
+        msg, CHAT_ID, reply_markup_json
     )
     request = requests.post(url, headers)
     if request.ok is not True:
@@ -164,7 +162,7 @@ def send_numpad():
     reply_markup_json = json.dumps(reply_markup)
     msg = "Enter Amount:"
     url = URL + "sendMessage?text={}&chat_id={}&reply_markup={}".format(
-        msg, CHAT, reply_markup_json
+        msg, CHAT_ID, reply_markup_json
     )
     request = requests.post(url, headers)
     if request.ok is not True:
