@@ -2,7 +2,7 @@
     "Parameters": {
         "ServiceName": "tgbots",
         "StackTag": "demo",
-        "StackName": "AWS::StackName",
+        "StackName": {"Ref" : "AWS::StackName"},
         "ArtifactS3Bucket": "< This value is replaced by the UnitTestAndBuild CodeBuild step based on its $env:ARTIFACT_S3_BUCKET variable >",
         "ArtifactS3KeyPrefix": "< This value is replaced by the UnitTestAndBuild CodeBuild step based on its $env:S3_KEY_PREFIX variable >"
     }
