@@ -8,12 +8,8 @@ Parameters:
   StackTag:
     Type: String
     Description: An environment tag for this stack. Used to differentiate what resource need or should be created.
-  StackName:
-    Type: String
-    Description: An environment tag for this stack. Used to differentiate what resource need or should be created.
-    Default: !Ref AWS::StackName
 Resources:
-    DynamoDBTable:
+    DDBDataTable:
         Type: "AWS::DynamoDB::Table"
         Properties:
             AttributeDefinitions:
@@ -26,7 +22,7 @@ Resources:
             ProvisionedThroughput:
                 ReadCapacityUnits: 5
                 WriteCapacityUnits: 5
-    DynamoDBTable2:
+    DDBCallBackTable:
         Type: "AWS::DynamoDB::Table"
         Properties:
             AttributeDefinitions:
@@ -42,7 +38,7 @@ Resources:
     IAMManagedPolicy:
         Type: 'AWS::IAM::ManagedPolicy'
         Properties:
-            ManagedPolicyName: !Sub '${ServiceName}-LambdaEdgeExecutionRole'
+            ManagedPolicyName: !Sub '${AWS::StackName}-LambdaEdgeExecutionRole'
             Path: '/service-role/'
             PolicyDocument:
               Version: '2012-10-17'
@@ -57,8 +53,8 @@ Resources:
                     - dynamodb:PutItem
                     - dynamodb:UpdateItem
                   Resource:
-                    - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBTable2}'
-                    - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBTable}'
+                    - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DDBCallBackTable}'
+                    - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DDBDataTable}'
                 - Effect: Allow
                   Action:
                     - logs:CreateLogGroup
@@ -75,7 +71,7 @@ Resources:
         Type: "AWS::IAM::Role"
         Properties:
             Path: "/service-role/"
-            RoleName: "LambdaIamRole"
+            RoleName: !Sub '${AWS::StackName}-LambdaIamRole'
             AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":[\"lambda.amazonaws.com\",\"edgelambda.amazonaws.com\"]},\"Action\":\"sts:AssumeRole\"}]}"
             MaxSessionDuration: 3600
             ManagedPolicyArns:
@@ -87,7 +83,7 @@ Resources:
             Bucket: tgbots-514215195183-artifacts
             Key: pkg.zip
           Description: ""
-          FunctionName: !Sub "${ServiceName}Lambda"
+          FunctionName: !Sub '${AWS::StackName}-LambdaFunction'
           Handler: handlers.fleet_morsel_bot_handler
           MemorySize: 1024
           Role: !GetAtt LambdaIamRole.Arn
@@ -101,7 +97,7 @@ Resources:
     ApiGatewayRestApi:
           Type: "AWS::ApiGateway::RestApi"
           Properties:
-              Name: ApiGatewayRestApi
+              Name: !Sub '${AWS::StackName}-ApiGatewayRestApi'
               ApiKeySourceType: "HEADER"
               Description: An API Gateway with a Lambda Integration
               EndpointConfiguration:
@@ -136,14 +132,14 @@ Resources:
         Type: AWS::ApiGateway::Stage
         Properties:
           DeploymentId: !Ref ApiGatewayDeployment
-          Description: Lambda API Stage v0
+          Description: !Sub 'Lambda API Stage v0 - ${AWS::StackName}'
           RestApiId: !Ref ApiGatewayRestApi
           StageName: 'v0'
     ApiGatewayDeployment:
         Type: AWS::ApiGateway::Deployment
         DependsOn: ApiGatewayMethod
         Properties:
-          Description: Lambda API Deployment
+          Description: !Sub 'Lambda API Deployment - ${AWS::StackName}'
           RestApiId: !Ref ApiGatewayRestApi
     LambdaPermission:
         Type: "AWS::Lambda::Permission"
