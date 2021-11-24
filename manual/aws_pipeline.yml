@@ -655,22 +655,22 @@ Outputs:
   KMSKeyArn:
     Value: !GetAtt KMSKey.Arn
     Export:
-      Name: GitHubSyncKMSKeyArn
+      Name: !Sub ${ServiceName}-GitHubSyncKMSKeyArn
 
   GitHubCPSyncArtifactS3BucketName:
     Value: !Ref GitHubCPSyncArtifactS3Bucket
     Description: Name of the GitHubCPSyncArtifactS3Bucket Amazon S3 bucket
     Export:
-      Name: GitHubSyncArtifactS3Bucket
+      Name: !Sub ${ServiceName}-GitHubSyncArtifactS3Bucket
 
   GitHubCPSyncPipeline:
     Value: !Ref GitHubCPSyncPipeline
     Description: Pipeline Name
     Export:
-      Name: GitHubSyncPipeline
+      Name: !Sub ${ServiceName}-GitHubSyncPipeline
 
   UnitTestAndBuildProject:
     Value: !Ref UnitTestAndBuildProject
     Description: CodeBuild Unit Test And Build Project
     Export:
-      Name: GitHubSyncUnitTestAndBuildProject
+      Name: !Sub ${ServiceName}-GitHubSyncUnitTestAndBuildProject
