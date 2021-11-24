@@ -5,8 +5,10 @@ Parameters:
   ServiceName:
     Type: String
     Description: 'Name of the service that will be used to tag each resource.'
-
   StackTag:
+    Type: String
+    Description: An environment tag for this stack. Used to differentiate what resource need or should be created.
+  StackName:
     Type: String
     Description: An environment tag for this stack. Used to differentiate what resource need or should be created.
 Resources:
@@ -95,7 +97,6 @@ Resources:
                   EncryptedJson: '{{resolve:ssm:/tgbots/fleetmorsel/secrets}}'
           Tags:
             ServiceName: !Ref ServiceName
-            StackName: !Ref AWS::StackName
     ApiGatewayRestApi:
           Type: "AWS::ApiGateway::RestApi"
           Properties:
