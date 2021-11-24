@@ -7,6 +7,7 @@ BeforeAll {
 
 }
 
+
 Describe -Name 'JSON Configuration File Validation' -Fixture {
     Context -Name 'JSON Parameter Files' -Foreach $files {
         foreach ($file in $files) {
