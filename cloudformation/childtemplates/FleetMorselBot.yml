@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'AUTOMATED: pyTgBudgetBot Serverless Deployment Logic'
+Description: 'AUTOMATED: tgbots Serverless Deployment Logic'
 Transform: 'AWS::Serverless-2016-10-31'
 Parameters:
   ServiceName:
@@ -81,7 +81,7 @@ Resources:
         Type: 'AWS::Serverless::Function'
         Properties:
           CodeUri:
-            Bucket: pytgbudgetbot-514215195183-artifacts
+            Bucket: tgbots-514215195183-artifacts
             Key: pkg.zip
           Description: ""
           FunctionName: !Sub "${ServiceName}Lambda"

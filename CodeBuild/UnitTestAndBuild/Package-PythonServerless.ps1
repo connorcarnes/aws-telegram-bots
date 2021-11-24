@@ -49,4 +49,4 @@ Write-Host "Contents of $lambdaPackagePath is:`r`n $(Get-ChildItem $lambdaPackag
 
 Get-ChildItem $lambdaPackagePath | Compress-archive -DestinationPath "$lambdaPackagePath.zip"
 
-aws s3 cp $lambdaZipPath s3://pytgbudgetbot-514215195183-artifacts/pkg.zip
+aws s3 cp $lambdaZipPath s3://tgbots-514215195183-artifacts/pkg.zip
