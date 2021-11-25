@@ -58,7 +58,7 @@ Outputs:
     Value: !GetAtt FleetMorselBot.Outputs.ApiGatewayEndpoint
     Export:
       Name: !Sub
-        - !GetAtt FleetMorselBot.StackName
+        - !GetAtt FleetMorselBot.Outputs.StackName
         - '-Endpoint'
 
 
