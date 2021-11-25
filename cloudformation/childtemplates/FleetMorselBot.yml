@@ -153,6 +153,5 @@ Outputs:
   ApiGatewayEndpoint:
     Description: API Gateway endpoint that will be used to configure Telegram bot webhooks
     Value: !Sub "https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiGatewayStage}/"
-  StackName:
-    Description: Name of stack
-    Value: AWS::StackName
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiGatewayEndpoint'
