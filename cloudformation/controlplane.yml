@@ -52,6 +52,11 @@ Resources:
           Value: !Ref StackTag
         - Key: StackName
           Value: !Ref AWS::StackName
+Outputs:
+  FleetMorselEndpoint:
+    Description: API Gateway endpoint that will be used to configure Telegram bot webhooks
+    Value: !Ref FleetMorselBot.Outputs.ApiGatewayEndpoint
+
 
   # testLambda:
   #   Type: AWS::CloudFormation::Stack

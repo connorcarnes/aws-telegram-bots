@@ -101,6 +101,7 @@ Metadata:
         Parameters:
           - CodeBuildImage
           - PathToBuildSpecTemplate
+          - PathToIntegrationTestBuildSpecTemplate
           - PathToControlPlaneTemplate
           - PathToControlPlaneParametersJson
     ParameterLabels:
