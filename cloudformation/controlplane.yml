@@ -57,9 +57,7 @@ Outputs:
     Description: API Gateway endpoint that will be used to configure Telegram bot webhooks
     Value: !GetAtt FleetMorselBot.Outputs.ApiGatewayEndpoint
     Export:
-      Name: !Sub
-        - !GetAtt FleetMorselBot.Outputs.StackName
-        - '-Endpoint'
+      Name: !Sub '${FleetMorselBot.Outputs.StackName}-Endpoint'
 
 
   # testLambda:
