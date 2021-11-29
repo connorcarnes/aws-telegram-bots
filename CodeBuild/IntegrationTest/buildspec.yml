@@ -12,6 +12,7 @@ phases:
       # Check PowerShell Version
       - pwsh -command '$PSVersionTable'
 
+
       # check python version
       - python --version
 
