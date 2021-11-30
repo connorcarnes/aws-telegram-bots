@@ -23,7 +23,7 @@
 
 
 $ErrorActionPreference = 'Stop'
-$ProgressPreference = 'SilentlyContinue'
+Set-Variable ProgressPreference SilentlyContinue
 $VerbosePreference = 'SilentlyContinue'
 
 # List of PowerShell Modules required for the build
@@ -104,7 +104,6 @@ foreach ($module in $modulesToInstall) {
         ErrorAction        = 'Stop'
     }
     try {
-        $ProgressPreference = 'SilentlyContinue'
         Install-Module @installSplat
         Import-Module -Name $module.ModuleName -ErrorAction Stop
         '  - Successfully installed {0}' -f $module.ModuleName

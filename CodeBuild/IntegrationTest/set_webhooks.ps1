@@ -4,6 +4,8 @@ $EncryptedMemoryStreamToDecrypt = New-Object System.IO.MemoryStream($encryptedBy
 $DecryptedMemoryStream = Invoke-KMSDecrypt -CiphertextBlob $encryptedMemoryStreamToDecrypt
 $BotValues = ConvertFrom-Json ([System.Text.Encoding]::UTF8.GetString($decryptedMemoryStream.Plaintext.ToArray()))
 
-$Uri = "https://api.telegram.org/bot$($BotValues.token)/setWebhook?url=$($ENV:FleetMorselBotWebhook)"
+$Uri = "https://api.telegram.org/bot$($BotValues.BOT_TOKEN)/setWebhook?url=$($ENV:FleetMorselBotWebhook)"
+
+write-host "Setting webhook to $($Uri)"
 
 Invoke-RestMethod -Uri $Uri
