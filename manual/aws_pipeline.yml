@@ -319,6 +319,12 @@ Resources:
                 Action:
                   - "kms:*"
                 Resource: !GetAtt KMSKey.Arn
+              -
+                Effect: Allow
+                Action:
+                  - "ssm:GetParameter"
+                Resource:
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/tgbots/*"
         # -
         #   PolicyName: !Sub "${ServiceName}-IntegrationTestPolicy"
         #   PolicyDocument:
