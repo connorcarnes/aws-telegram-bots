@@ -78,6 +78,13 @@ $null = $modulesToInstall.Add(([PSCustomObject]@{
             BucketName    = 'PSGallery'
             KeyPrefix     = ''
         }))
+$null = $modulesToInstall.Add(([PSCustomObject]@{
+            ModuleName    = 'AWS.Tools.SimpleSystemsManagement'
+            ModuleVersion = '4.1.14.0'
+            BucketName    = 'PSGallery'
+            KeyPrefix     = ''
+        }))
+
 
 
 Get-PackageProvider -Name Nuget -ForceBootstrap | Out-Null
@@ -97,6 +104,7 @@ foreach ($module in $modulesToInstall) {
         ErrorAction        = 'Stop'
     }
     try {
+        $ProgressPreference = 'SilentlyContinue'
         Install-Module @installSplat
         Import-Module -Name $module.ModuleName -ErrorAction Stop
         '  - Successfully installed {0}' -f $module.ModuleName
