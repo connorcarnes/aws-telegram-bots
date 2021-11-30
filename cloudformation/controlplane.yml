@@ -58,9 +58,6 @@ Outputs:
     Value: !GetAtt FleetMorselBot.Outputs.ApiGatewayEndpoint
     Export:
       Name: !Sub "${AWS::StackName}-FleetMorselBotWebhook"
-  TestOutput:
-    Description: Test Output
-    Value: !GetAtt FleetMorselBot.StackName
 
 
   # testLambda:
