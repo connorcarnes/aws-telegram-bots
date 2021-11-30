@@ -72,6 +72,12 @@ $null = $modulesToInstall.Add(([PSCustomObject]@{
             BucketName    = 'PSGallery'
             KeyPrefix     = ''
         }))
+$null = $modulesToInstall.Add(([PSCustomObject]@{
+            ModuleName    = 'AWS.Tools.KeyManagementService'
+            ModuleVersion = '4.1.14.0'
+            BucketName    = 'PSGallery'
+            KeyPrefix     = ''
+        }))
 
 
 Get-PackageProvider -Name Nuget -ForceBootstrap | Out-Null

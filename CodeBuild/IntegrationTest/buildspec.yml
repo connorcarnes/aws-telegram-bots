@@ -12,12 +12,8 @@ phases:
       # Check PowerShell Version
       - pwsh -command '$PSVersionTable'
 
-
       # check python version
       - python --version
-
-      # Check available variables in the build
-      # - pwsh -command 'Get-Variable'
 
       # Check available environment variables in the build
       - pwsh -command 'Get-ChildItem env:'
@@ -34,24 +30,9 @@ phases:
 
   pre_build:
     commands:
-      - echo THE PREBUILD
-      # Validate CloudFormation Templates
-      # - pwsh -command '
-      #     Import-Module Pester;
-      #     $pesterConfiguration = [PesterConfiguration]::new();
-      #     $pesterConfiguration.Run.Exit = $true;
-      #     $pesterConfiguration.Run.Path = "./CodeBuild/UnitTestAndBuild/Validate-CFNTemplates.Tests.ps1";
-      #     $pesterConfiguration.Output.Verbosity = "Detailed";
-      #     Invoke-Pester -Configuration $pesterConfiguration'
-#
-      # # Validate Json files
-      # - pwsh -command '
-      #     Import-Module Pester;
-      #     $pesterConfiguration = [PesterConfiguration]::new();
-      #     $pesterConfiguration.Run.Exit = $true;
-      #     $pesterConfiguration.Run.Path = "./CodeBuild/UnitTestAndBuild/Validate-JSONConfigurations.Tests.ps1";
-      #     $pesterConfiguration.Output.Verbosity = "Detailed";
-      #     Invoke-Pester -Configuration $pesterConfiguration'
+      # Set webhook
+      - pwsh -command './CodeBuild/IntegrationTest/set_webhooks.ps1'
+
   build:
     commands:
       - echo THE BUILD
