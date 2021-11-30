@@ -413,10 +413,10 @@ Resources:
             Value: 'SingleAccount'
           - Name: GIT_REPO
             Value: !Ref GitHubRepositoryName
-          # - Name: IntegrationTestIAMRole
-          #   Value: !GetAtt IntegrationTestIAMRole.Arn
-          - Name: AWSRegion
-            Value: !Sub ${AWS::Region}
+        #   - Name: IntegrationTestIAMRole
+        #     Value: !GetAtt IntegrationTestIAMRole.Arn
+        #   - Name: AWSRegion
+        #     Value: !Sub ${AWS::Region}
       # LogsConfig:
       Name: !Sub "${ServiceName}-IntegrationTest"
       # QueuedTimeoutInMinutes:
@@ -625,6 +625,7 @@ Resources:
               Name: DeployPrimaryControlPlane
               InputArtifacts:
                 - Name: CFNTemplateArtifact
+              Namespace: DeployNamespace
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
@@ -654,6 +655,12 @@ Resources:
                 - Name: ValidatedStack
               Configuration:
                 ProjectName: !Ref IntegrationTestProject
+                EnvironmentVariables: !Sub |
+                  [
+                      { "name": "AWS_REGION", "value": "${AWS::Region}" },
+                      { "name": "STACK_NAME", "value": "${AWS::StackName}" },
+                      { "name": "FleetMorselBotWebhook", "value": "#{DeployNamespace.FleetMorselBotWebhook}" }
+                  ]
               RunOrder: 2
 
 Outputs:
