@@ -91,7 +91,7 @@ Resources:
           Timeout: 900
           Environment:
               Variables:
-                  EncryptedJson: '{{resolve:ssm:/tgbots/fleetmorsel/secrets}}'
+                  EncryptedJson: '{{resolve:ssm:/tgbots/fleetmorselbot}}'
           Tags:
             ServiceName: !Ref ServiceName
     ApiGatewayRestApi:
