@@ -25,7 +25,7 @@ phases:
       - pwsh -command './CodeBuild/configure_aws_credential.ps1'
 
       # Installing PowerShell Modules from PSGallery
-      - pwsh -command '$ProgressPreference = 'SilentlyContinue' ; ./CodeBuild/UnitTestAndBuild/install_modules.ps1'
+      - pwsh -command 'Set-Variable $ProgressPreference SilentlyContinue ; ./CodeBuild/UnitTestAndBuild/install_modules.ps1'
 
       # Install Python packages
       - pip install pip -U --quiet
