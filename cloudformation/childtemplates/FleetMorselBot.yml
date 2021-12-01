@@ -66,8 +66,7 @@ Resources:
                   Action:
                     - kms:Decrypt
                   Resource:
-                    - Fn::ImportValue:
-                      !Sub '${ServiceName}-GitHubSyncKMSKeyArn'
+                    Fn::ImportValue: !Sub '${ServiceName}-GitHubSyncKMSKeyArn'
     LambdaIamRole:
         Type: "AWS::IAM::Role"
         Properties:
