@@ -665,7 +665,9 @@ Resources:
                   [
                       { "name": "AWS_REGION", "value": "${AWS::Region}" },
                       { "name": "STACK_NAME", "value": "${AWS::StackName}" },
-                      { "name": "FleetMorselBotWebhook", "value": "#{DeployNamespace.FleetMorselBotWebhook}" }
+                      { "name": "FleetMorselBotWebhook", "value": "#{DeployNamespace.FleetMorselBotWebhook}" },
+                      { "name": "LoquaciousEchoBotWebhook", "value": "#{DeployNamespace.LoquaciousEchoBotWebhook}" },
+                      { "name": "BOT_LIST", "value": "#{DeployNamespace.Resources}" }
                   ]
               RunOrder: 2
 
