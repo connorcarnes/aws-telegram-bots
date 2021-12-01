@@ -25,7 +25,7 @@ phases:
       - pwsh -command './CodeBuild/configure_aws_credential.ps1'
 
       # Installing PowerShell Modules from PSGallery
-      - pwsh -command 'Set-Variable -Scope Global -Name ProgressPreference -Value SilentlyContinue; ./CodeBuild/UnitTestAndBuild/install_modules.ps1'
+      - pwsh -command 'Set-Variable -Scope Global -Name ProgressPreference -Value SilentlyContinue ; ./CodeBuild/UnitTestAndBuild/install_modules.ps1'
 
       # Install Python packages
       - pip install pip -U --quiet
@@ -62,7 +62,7 @@ phases:
       # - python -m pytest lambdafunctions/python/tests -v
 
       # Package the Python lambda
-      - pwsh -command './CodeBuild/UnitTestAndBuild/Package-PythonServerless.ps1'
+      - pwsh -command 'Set-Variable -Scope Global -Name ProgressPreference -Value SilentlyContinue ; ./CodeBuild/UnitTestAndBuild/Package-PythonServerless.ps1'
 
       # the method below uses the aws cli to package the control plan but this seems to be having S3 Url validation issues currently
       # using Publish-CFNTemplates instead

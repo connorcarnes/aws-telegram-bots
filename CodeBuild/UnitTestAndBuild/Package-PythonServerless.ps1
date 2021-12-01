@@ -39,8 +39,8 @@ Get-ChildItem $lambdaSharedPath  | Copy-Item -Destination $lambdaPackagePath -Fo
 Write-Host "Contents of $lambdaPackagePath is:`r`n $(Get-ChildItem $lambdaPackagePath | Format-Table -AutoSize | Out-String)"
 
 $lambdaRequirementsPath = [System.IO.Path]::Combine($lambdaSourcePath, 'requirements.txt')
-Write-Host "lambdaRequirementsPathis $lambdaRequirementsPath"
-pip install -t $lambdaPackagePath -r $lambdaRequirementsPath
+Write-Host "lambdaRequirementsPath is $lambdaRequirementsPath"
+pip install -t $lambdaPackagePath -r $lambdaRequirementsPath --quiet
 
 $lambdaZipPath = [System.IO.Path]::Combine($pythonLambdaRoot, 'pkg.zip')
 Write-Host "lambdaZipPath is $lambdaZipPath"
@@ -49,4 +49,4 @@ Write-Host "Contents of $lambdaPackagePath is:`r`n $(Get-ChildItem $lambdaPackag
 
 Get-ChildItem $lambdaPackagePath | Compress-archive -DestinationPath "$lambdaPackagePath.zip"
 
-aws s3 cp $lambdaZipPath s3://tgbots-514215195183-artifacts/pkg.zip
+aws s3 cp $lambdaZipPath s3://tgbots-514215195183-artifacts/pkg.zip --no-progress
