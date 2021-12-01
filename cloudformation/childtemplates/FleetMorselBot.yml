@@ -66,7 +66,7 @@ Resources:
                   Action:
                     - kms:Decrypt
                   Resource:
-                    - !Sub 'arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/2cfefa65-a316-4706-a598-5e0b8cb057e9'
+                    - !Sub 'arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/3b92a84a-d53c-4bbb-b8f0-40bdeb395c16'
     LambdaIamRole:
         Type: "AWS::IAM::Role"
         Properties:
