@@ -1,0 +1,117 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AUTOMATED: tgbots Serverless Deployment Logic'
+Transform: 'AWS::Serverless-2016-10-31'
+Parameters:
+  ServiceName:
+    Type: String
+    Description: 'Name of the service that will be used to tag each resource.'
+  StackTag:
+    Type: String
+    Description: An environment tag for this stack. Used to differentiate what resource need or should be created.
+Resources:
+    LoquaciousEchoBotIAMManagedPolicy:
+        Type: 'AWS::IAM::ManagedPolicy'
+        Properties:
+            ManagedPolicyName: !Sub '${AWS::StackName}-LambdaEdgeExecutionRole'
+            Path: '/service-role/'
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                  Resource:
+                    - 'arn:aws:logs:*:*:*'
+                - Effect: Allow
+                  Action:
+                    - kms:Decrypt
+                  Resource:
+                    Fn::ImportValue: !Sub '${ServiceName}-GitHubSyncKMSKeyArn'
+    LoquaciousEchoBotLambdaIamRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            Path: "/service-role/"
+            RoleName: !Sub '${AWS::StackName}-LambdaIamRole'
+            AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":[\"lambda.amazonaws.com\",\"edgelambda.amazonaws.com\"]},\"Action\":\"sts:AssumeRole\"}]}"
+            MaxSessionDuration: 3600
+            ManagedPolicyArns:
+              - !Ref LoquaciousEchoBotIAMManagedPolicy
+    LoquaciousEchoBotLambdaFunction:
+        Type: 'AWS::Serverless::Function'
+        Properties:
+          CodeUri:
+            Bucket: tgbots-514215195183-artifacts
+            Key: pkg.zip
+          Description: ""
+          FunctionName: !Sub '${AWS::StackName}-LambdaFunction'
+          Handler: handlers.loquacious_echo_bot_handler
+          MemorySize: 1024
+          Role: !GetAtt LoquaciousEchoBotLambdaIamRole.Arn
+          Runtime: python3.9
+          Timeout: 900
+          Environment:
+              Variables:
+                  EncryptedJson: '{{resolve:ssm:/tgbots/loquaciousechobot}}'
+          Tags:
+            ServiceName: !Ref ServiceName
+    LoquaciousEchoBotRestApi:
+          Type: "AWS::ApiGateway::RestApi"
+          Properties:
+              Name: !Sub '${AWS::StackName}-ApiGatewayRestApi'
+              ApiKeySourceType: "HEADER"
+              Description: An API Gateway with a Lambda Integration
+              EndpointConfiguration:
+                  Types:
+                    - "REGIONAL"
+    LoquaciousEchoBotApiGatewayMethod:
+        Type: "AWS::ApiGateway::Method"
+        Properties:
+            RestApiId: !Ref LoquaciousEchoBotRestApi
+            ResourceId: !GetAtt LoquaciousEchoBotRestApi.RootResourceId
+            HttpMethod: "ANY"
+            AuthorizationType: "NONE"
+            ApiKeyRequired: false
+            RequestParameters: {}
+            MethodResponses:
+              -
+                ResponseModels:
+                    "application/json": "Empty"
+                StatusCode: "200"
+            Integration:
+                ContentHandling: "CONVERT_TO_TEXT"
+                IntegrationHttpMethod: "POST"
+                IntegrationResponses:
+                  -
+                    ResponseTemplates: {}
+                    StatusCode: "200"
+                PassthroughBehavior: "WHEN_NO_MATCH"
+                TimeoutInMillis: 29000
+                Type: "AWS_PROXY"
+                Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${LoquaciousEchoBotLambdaFunction}/invocations"
+    LoquaciousEchoBotApiGatewayStage:
+        Type: AWS::ApiGateway::Stage
+        Properties:
+          DeploymentId: !Ref LoquaciousEchoBotApiGatewayDeployment
+          Description: !Sub 'Lambda API Stage v0 - ${AWS::StackName}'
+          RestApiId: !Ref LoquaciousEchoBotRestApi
+          StageName: 'v0'
+    LoquaciousEchoBotApiGatewayDeployment:
+        Type: AWS::ApiGateway::Deployment
+        DependsOn: LoquaciousEchoBotApiGatewayMethod
+        Properties:
+          Description: !Sub 'Lambda API Deployment - ${AWS::StackName}'
+          RestApiId: !Ref LoquaciousEchoBotRestApi
+    LoquaciousEchoBotLambdaPermission:
+        Type: "AWS::Lambda::Permission"
+        Properties:
+            Action: "lambda:InvokeFunction"
+            FunctionName: !GetAtt LoquaciousEchoBotLambdaFunction.Arn
+            Principal: "apigateway.amazonaws.com"
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${LoquaciousEchoBotRestApi}/*/*/"
+
+Outputs:
+  ApiGatewayEndpoint:
+    Description: API Gateway endpoint that will be used to configure Telegram bot webhooks
+    Value: !Sub "https://${LoquaciousEchoBotRestApi}.execute-api.${AWS::Region}.amazonaws.com/${LoquaciousEchoBotApiGatewayStage}/"

@@ -52,31 +52,27 @@ Resources:
           Value: !Ref StackTag
         - Key: StackName
           Value: !Ref AWS::StackName
+  LoquaciousEchoBot:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./childtemplates/LoquaciousEchoBot.yml
+      TimeoutInMinutes: 15
+      Parameters:
+        ServiceName: !Ref ServiceName
+        StackTag: !Ref StackTag
+      Tags:
+        - Key: ServiceName
+          Value: !Ref ServiceName
+        - Key: StackTag
+          Value: !Ref StackTag
 Outputs:
   FleetMorselBotWebhook:
     Description: API Gateway endpoint that will be used to configure Telegram bot webhooks
     Value: !GetAtt FleetMorselBot.Outputs.ApiGatewayEndpoint
     Export:
       Name: FleetMorselBotWebhook
-
-
-  # testLambda:
-  #   Type: AWS::CloudFormation::Stack
-  #   Properties:
-  #     TemplateURL: ./childtemplates/testLambda.yml
-  #     # TemplateURL: !Sub
-  #     #   # - "https://${ArtifactS3Bucket}.s3.${AWSRegion}.amazonaws.com/${ArtifactS3KeyPrefix}/${FileName}"
-  #     #   - "https://s3-${AWSRegion}.amazonaws.com/${ArtifactS3Bucket}/${ArtifactS3KeyPrefix}/${FileName}"
-  #     #   - AWSRegion: !Ref "AWS::Region"
-  #     #     ArtifactS3Bucket: !Ref ArtifactS3Bucket
-  #     #     ArtifactS3KeyPrefix: !Ref ArtifactS3KeyPrefix
-  #     #     FileName: cloudformation/cloudformation/childtemplates/pwshLambdaExample.yml
-  #     TimeoutInMinutes: 15 #make sure it can actually complete in this time period
-  #     Parameters: #much match the parameters of nested template
-  #       ServiceName: !Ref ServiceName
-  #       StackTag: !Ref StackTag
-  #     Tags:
-  #       - Key: ServiceName
-  #         Value: !Ref ServiceName
-  #       - Key: StackTag
-  #         Value: !Ref StackTag
+  LoquaciousEchoBotWebhook:
+    Description: API Gateway endpoint that will be used to configure Telegram bot webhooks
+    Value: !GetAtt LoquaciousEchoBot.Outputs.ApiGatewayEndpoint
+    Export:
+      Name: LoquaciousEchoBotWebhook

@@ -1,10 +1,9 @@
 from pyServerlessTelegramBot import *
 
 
-# def test_handler(event, context):
-#     message = "TO STRING: " + str(env_dict)
-#     send_message(message)
-#     return {"statusCode": 200}
+def loquacious_echo_bot_handler(event, context):
+    send_message("echo")
+    return {"statusCode": 200}
 
 
 def fleet_morsel_bot_handler(event, context):
