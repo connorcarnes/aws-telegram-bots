@@ -53,7 +53,7 @@ Resources:
           Timeout: 900
           Environment:
               Variables:
-                  EncryptedJson: '{{resolve:ssm:/tgbots/loquaciousechobot}}'
+                  EncryptedJson: '{{resolve:ssm:/tgbots/LoquaciousEchoBot}}'
           Tags:
             ServiceName: !Ref ServiceName
     LoquaciousEchoBotRestApi:
