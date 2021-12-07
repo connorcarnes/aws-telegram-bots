@@ -1,0 +1,20 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Dynamo DB tables for storing telegram bot data'
+Parameters:
+  ServiceName:
+    Type: String
+    Description: 'Name of the service that will be used to tag each resource.'
+Resources:
+    DDBDataTable:
+        Type: "AWS::DynamoDB::Table"
+        Properties:
+            AttributeDefinitions:
+              - AttributeName: "update_id"
+                AttributeType: "N"
+            TableName: "DataTable"
+            KeySchema:
+              - AttributeName: "update_id"
+                KeyType: "HASH"
+            ProvisionedThroughput:
+                ReadCapacityUnits: 5
+                WriteCapacityUnits: 5

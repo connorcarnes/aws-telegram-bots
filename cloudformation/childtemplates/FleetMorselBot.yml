@@ -9,19 +9,6 @@ Parameters:
     Type: String
     Description: An environment tag for this stack. Used to differentiate what resource need or should be created.
 Resources:
-    DDBDataTable:
-        Type: "AWS::DynamoDB::Table"
-        Properties:
-            AttributeDefinitions:
-              - AttributeName: "update_id"
-                AttributeType: "N"
-            TableName: "DataTable"
-            KeySchema:
-              - AttributeName: "update_id"
-                KeyType: "HASH"
-            ProvisionedThroughput:
-                ReadCapacityUnits: 5
-                WriteCapacityUnits: 5
     DDBCallBackTable:
         Type: "AWS::DynamoDB::Table"
         Properties:
@@ -54,7 +41,7 @@ Resources:
                     - dynamodb:UpdateItem
                   Resource:
                     - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DDBCallBackTable}'
-                    - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DDBDataTable}'
+                    - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/DataTable'
                 - Effect: Allow
                   Action:
                     - logs:CreateLogGroup
